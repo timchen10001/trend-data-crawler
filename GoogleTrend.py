@@ -6,6 +6,7 @@ import os
 import time
 import random
 import pandas as pd
+import platform
 
 
 def rd_ms():
@@ -47,13 +48,14 @@ class GoogleTrend:
         self.q = q  # query to search
         self.dr = dr  # date range
         self.env_dir = os.getcwd()
+        self.platform = platform.system()
         self.driver = self._get_driver()
         self.main()
 
     def _get_driver(self) -> webdriver.chrome.webdriver.WebDriver:
         headless = not self.dev
 
-        driver_path = rf'{self.env_dir}/chromedriver'
+        driver_path = self._get_driver_path()
         data_path = self._create_path('/temp')
         data_path += f'/{self.q}'
 
@@ -92,6 +94,12 @@ class GoogleTrend:
             if not os.path.isdir(p):
                 os.mkdir(p)
         return p
+
+    def _get_driver_path(self):
+        path = rf'{self.env_dir}/driver/chromedriver'
+        if self.platform == 'Windows': path += '.exe'
+        elif self.platform == 'Linux': path += '-linux'
+        return path
 
     def _toPage(self, url):
         self.driver.get(url)
