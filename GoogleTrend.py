@@ -27,7 +27,8 @@ def iTs(i: int) -> str:
     return s + str(i)
 
 def path_exists(path: str) -> bool:
-    if '/' in path:
+    ps = path_seperate()
+    if ps in path:
         return True
     return False
 
@@ -37,14 +38,22 @@ def files_cleaner(path: str):
         remove_folder(path)
     os.mkdir(path)
 
+def path_seperate():
+    plat = platform.system()
+    ps = ''
+    if plat == 'Windows': ps = '\\\\'
+    else: ps = '/'
+    return ps
+
 
 class GoogleTrend:
     def __init__(self, q: str, dr: list, dev: bool=False, geo='Global'):
         self.download_button_selector = 'body > div.trends-wrapper > div:nth-child(2) > div > md-content > div > div > div:nth-child(1) > trends-widget > ng-include > widget > div > div > div > widget-actions > div > button.widget-actions-item.export'
 
-        self.url = r'https://trends.google.com.tw/trends/explore'
+        self.url = u'https://trends.google.com.tw/trends/explore'
         self.dev = dev
         self.geo = geo if geo != 'Global' else ''
+        self.ps = path_seperate() # path_seperate
         self.q = q  # query to search
         self.dr = dr  # date range
         self.env_dir = os.getcwd()
@@ -56,8 +65,8 @@ class GoogleTrend:
         headless = not self.dev
 
         driver_path = self._get_driver_path()
-        data_path = self._create_path('/temp')
-        data_path += f'/{self.q}'
+        data_path = self._create_path(f'{self.ps}temp')
+        data_path += f'{self.ps}{self.q}'
 
         files_cleaner(data_path)
 
@@ -85,18 +94,18 @@ class GoogleTrend:
     def _create_path(self, path: str):
         if not path_exists(path=path):
             return path
-        split_p = path.split('/')
+        split_p = path.split(self.ps)
         p = f'{self.env_dir}'
         for node in split_p:
             if not node:
                 continue
-            p += f'/{node}'
+            p += f'{self.ps}{node}'
             if not os.path.isdir(p):
                 os.mkdir(p)
         return p
 
     def _get_driver_path(self):
-        path = rf'{self.env_dir}/driver/chromedriver'
+        path = rf'{self.env_dir}{self.ps}driver{self.ps}chromedriver'
         if self.platform == 'Windows': path += '.exe'
         elif self.platform == 'Linux': path += '-linux'
         return path
@@ -116,11 +125,11 @@ class GoogleTrend:
         print(self.driver.current_url)
 
     def _avoid_rewrite(self):
-        temp_path = f'{self.env_dir}/temp/{self.q}'
+        temp_path = f'{self.env_dir}{self.ps}temp{self.ps}{self.q}'
         i = 1
-        while os.path.isfile(f'{temp_path}/{i}.csv'): i+= 1
-        avoid_rewrite_path = f'{temp_path}/{i}.csv'
-        os.rename(f'{temp_path}/multiTimeline.csv', avoid_rewrite_path)
+        while os.path.isfile(f'{temp_path}{self.ps}{i}.csv'): i+= 1
+        avoid_rewrite_path = f'{temp_path}{self.ps}{i}.csv'
+        os.rename(f'{temp_path}{self.ps}multiTimeline.csv', avoid_rewrite_path)
 
     def _get_tidy_df(self):
         resolver = DataResolver(self.q)
@@ -134,10 +143,10 @@ class GoogleTrend:
 
     def _merge_per_day(self):
         print(f'\n正在合併資料 ···')
-        data_path = self._create_path(f'/data/day/{self.q}')
+        data_path = self._create_path(f'{self.ps}data{self.ps}day{self.ps}{self.q}')
         files_cleaner(data_path)
         print(f'合併完成 ···\n目標位置在 {data_path}\n')
-        data_path += f'/{self.q}.csv'
+        data_path += f'{self.ps}{self.q}.csv'
 
         df = self._get_tidy_df()
         df.to_csv(data_path)
@@ -181,7 +190,9 @@ class GoogleTrend:
 # data cleaner
 class DataResolver:
     def __init__(self, q: str):
-        self.root = f'{os.getcwd()}/temp/{q}'
+        self.ps = path_seperate()
+        self.env_dir = os.getcwd()
+        self.root = f'{self.env_dir}{self.ps}temp{self.ps}{q}'
         self.valid_int = [str(i) for i in range(10)]
         self.tidy_map = self._tidy_list()
 
@@ -214,8 +225,8 @@ class DataResolver:
             raise Exception(f'{path} 路徑不存在')
         i = 1
         l = []
-        while os.path.isfile(f'{self.root}/{i}.csv'):
-            l.append(f'{self.root}/{i}.csv')
+        while os.path.isfile(f'{self.root}{self.ps}{i}.csv'):
+            l.append(f'{self.root}{self.ps}{i}.csv')
             i += 1
         return l
 
@@ -233,7 +244,7 @@ class DataResolver:
         return tidy
 
 if __name__ == "__main__":
-    q = str(input('請輸入要搜索的關鍵字： 例如：google, 10110, 中文也可以'))
+    q = str(input('請輸入要搜索的關鍵字： 例如：google, 10110, 中文也可以\n'))
     start = str(input('請輸入起始時間 例如：2004-01-01\n'))
     end = str(input('請輸入最後時間 例如：2019-12-31\n'))
     google_trend = GoogleTrend(q, [start, end], dev=False)
