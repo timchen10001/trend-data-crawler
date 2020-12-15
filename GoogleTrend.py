@@ -27,7 +27,7 @@ def iTs(i: int) -> str:
     return s + str(i)
 
 def path_exists(path: str) -> bool:
-    ps = path_seperate()
+    ps = path_separate()
     if ps in path:
         return True
     return False
@@ -38,10 +38,10 @@ def files_cleaner(path: str):
         remove_folder(path)
     os.mkdir(path)
 
-def path_seperate():
+def path_separate():
     plat = platform.system()
     ps = ''
-    if plat == 'Windows': ps = '\\\\'
+    if plat == 'Windows': ps = '\\'
     else: ps = '/'
     return ps
 
@@ -53,7 +53,7 @@ class GoogleTrend:
         self.url = u'https://trends.google.com.tw/trends/explore'
         self.dev = dev
         self.geo = geo if geo != 'Global' else ''
-        self.ps = path_seperate() # path_seperate
+        self.ps = path_separate() # path_seperate
         self.q = q  # query to search
         self.dr = dr  # date range
         self.env_dir = os.getcwd()
@@ -190,7 +190,7 @@ class GoogleTrend:
 # data cleaner
 class DataResolver:
     def __init__(self, q: str):
-        self.ps = path_seperate()
+        self.ps = path_separate()
         self.env_dir = os.getcwd()
         self.root = f'{self.env_dir}{self.ps}temp{self.ps}{q}'
         self.valid_int = [str(i) for i in range(10)]
