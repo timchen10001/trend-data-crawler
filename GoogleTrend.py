@@ -47,7 +47,7 @@ def path_separate():
 
 
 class GoogleTrend:
-    def __init__(self, q: str, dr: list, dev: bool=False, geo='Global'):
+    def __init__(self, q: str, dr: list, daily: str, dev: bool=False, geo='Global'):
         self.download_button_selector = 'body > div.trends-wrapper > div:nth-child(2) > div > md-content > div > div > div:nth-child(1) > trends-widget > ng-include > widget > div > div > div > widget-actions > div > button.widget-actions-item.export'
 
         self.url = u'https://trends.google.com.tw/trends/explore'
@@ -55,11 +55,11 @@ class GoogleTrend:
         self.geo = geo if geo != 'Global' else ''
         self.ps = path_separate() # path_seperate
         self.q = q  # query to search
+        self.daily = daily
         self.dr = dr  # date range
         self.env_dir = os.getcwd()
         self.platform = platform.system()
         self.driver = self._get_driver()
-        self.main()
 
     def _get_driver(self) -> webdriver.chrome.webdriver.WebDriver:
         headless = not self.dev
@@ -117,7 +117,8 @@ class GoogleTrend:
     def _download(self):
         headless = not self.dev
         selector = self.download_button_selector
-        download = self.driver.find_element(By.CSS_SELECTOR, selector)
+        # download = self.driver.find_element(By.CSS_SELECTOR, selector)
+        download = self.driver.find_element_by_css_selector(selector)
         time.sleep(rd_ms())
         download.click()
         time.sleep(1)
@@ -131,7 +132,7 @@ class GoogleTrend:
         avoid_rewrite_path = f'{temp_path}{self.ps}{i}.csv'
         os.rename(f'{temp_path}{self.ps}multiTimeline.csv', avoid_rewrite_path)
 
-    def _get_tidy_df(self):
+    def _get_tidy_df_per_day(self):
         resolver = DataResolver(self.q)
         tidy = resolver.tidy_map
 
@@ -141,16 +142,32 @@ class GoogleTrend:
             df['M/D'] = [f'{e[0]}-{e[1]}' for e in tidy[y]]
         return df.set_index('M/D')
 
-    def _merge_per_day(self):
-        print(f'\n正在合併資料 ···')
-        data_path = self._create_path(f'{self.ps}data{self.ps}day{self.ps}{self.q}')
+    def scrapping_per_week(self, sy: int, ey: int):
+        geo_query = f'&geo={self.geo}' if self.geo else ''
+        cy = sy
+        sm = 1
+        while cy <= ey:
+            print(f'正在抓取 {cy}年 周資料···')
+            url = f'{self.url}?date={cy}-01-01%20{cy}-12-31&q={self.q}{geo_query}'
+            self._toPage(url)
+            time.sleep(1)
+            self._download()
+            time.sleep(rd_ms())
+            cy += 1
+    
+    def _merge_per_week(self, sy: int, ey: int):
+        print(f'正在合併週資料 ···')
+        data_path = self._create_path(f'{self.ps}data{self.ps}week{self.ps}{self.q}')
         files_cleaner(data_path)
-        print(f'合併完成 ···\n目標位置在 {data_path}\n')
-        data_path += f'{self.ps}{self.q}.csv'
-
-        df = self._get_tidy_df()
-        df.to_csv(data_path)
-        
+        print(f'合併完成 ···\n目標位置在 {data_path}')
+        temp_path = f'{self.env_dir}{self.ps}temp{self.ps}{self.q}'
+        i = 1
+        cy = sy
+        while cy <= ey:
+            f_path = f'{data_path}{self.ps}{cy}.csv'
+            os.rename(f'{temp_path}{self.ps}{i}.csv', f_path)
+            cy += 1
+            i += 1
 
     def scrapping_per_day(self, sy: int, ey: int):
         # sy: start year
@@ -167,7 +184,7 @@ class GoogleTrend:
         cy = sy
         sm = 1
         while cy <= ey:
-            print(f'\n正在抓取第 {cy} 年資料 ···')
+            print(f'正在抓取 {cy}年 日資料···')
             while sm <= 7:
                 url = f'{self.url}?'
                 url += f'date={cy}-{iTs(sm)}-01%20{cy}-{iTs(sm+5)}-3{_0_or_1(sm+5)}&q={self.q}{geo_query}'
@@ -179,13 +196,26 @@ class GoogleTrend:
             cy += 1
             sm = 1
 
-    def main(self):
-        start_year = int(self.dr[0].split('-')[0])
-        end_year = int(self.dr[1].split('-')[0])
+    def _merge_per_day(self):
+        print(f'正在合併資料 ···')
+        data_path = self._create_path(f'{self.ps}data{self.ps}day{self.ps}{self.q}')
+        files_cleaner(data_path)
+        print(f'合併完成 ···\n目標位置在 {data_path}')
+        data_path += f'{self.ps}{self.q}.csv'
 
-        self.scrapping_per_day(start_year, end_year)
+        df = self._get_tidy_df_per_day()
+        df.to_csv(data_path)
+
+    def main(self):
+        start_year = int(self.dr[0])
+        end_year = int(self.dr[1])
+        if self.daily == 'y' or self.daily == 'Y':
+            self.scrapping_per_day(start_year, end_year)
+            self._merge_per_day()
+            files_cleaner(f'{self.env_dir}{self.ps}temp{self.ps}{self.q}')
+        self.scrapping_per_week(start_year, end_year)
+        self._merge_per_week(start_year, end_year)
         self.driver.close()
-        self._merge_per_day()
 
 # data cleaner
 class DataResolver:
@@ -244,7 +274,17 @@ class DataResolver:
         return tidy
 
 if __name__ == "__main__":
-    q = str(input('請輸入要搜索的關鍵字： 例如：google, 10110, 中文也可以\n'))
-    start = str(input('請輸入起始時間 例如：2004-01-01\n'))
-    end = str(input('請輸入最後時間 例如：2019-12-31\n'))
-    google_trend = GoogleTrend(q, [start, end], dev=False)
+    qs = str(input('請輸入要搜索的關鍵字： 例如 google facebook\n')).split()
+    start = str(input('請輸入起始年份 例如：2004\n'))
+    end = str(input('請輸入結尾年份 例如：2019\n'))
+    daily = str(input('是否需要日資料 (y/n) '))
+    t_start = time.time()
+    for q in qs:
+        print(f'\n開始抓取 {q} ···')
+        tt_st = time.time()
+        google_trend = GoogleTrend(q, [start, end], dev=False, daily=daily)
+        google_trend.main()
+        tt_ed = time.time()
+        print(f'{q} 約花費 {int(tt_ed-tt_st)}s')
+    t_end = time.time()
+    print(f'總共花費 {int(t_end-t_start)}s')
