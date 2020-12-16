@@ -154,9 +154,9 @@ class GoogleTrend:
             self._download()
             time.sleep(rd_ms())
             cy += 1
-    
+
     def _merge_per_week(self, sy: int, ey: int):
-        print(f'正在合併週資料 ···')
+        print(f'正在合併週資料 ···')
         data_path = self._create_path(f'{self.ps}data{self.ps}week{self.ps}{self.q}')
         files_cleaner(data_path)
         print(f'合併完成 ···\n目標位置在 {data_path}')
@@ -165,7 +165,13 @@ class GoogleTrend:
         cy = sy
         while cy <= ey:
             f_path = f'{data_path}{self.ps}{cy}.csv'
-            os.rename(f'{temp_path}{self.ps}{i}.csv', f_path)
+            csv = pd.read_csv(f'{temp_path}{self.ps}{i}.csv')
+            data = csv['類別：所有類別'][1:]
+            df = pd.DataFrame()
+            df[f'{self.q}'] = list(data)
+            df['Y/M/D'] = list(data.index)
+            df = df.set_index('Y/M/D')
+            df.to_csv(f_path)
             cy += 1
             i += 1
 
@@ -237,7 +243,7 @@ class DataResolver:
 
             data = csv['類別：所有類別'][1:]  # not tidy
             date = list(data.index)  # not tidy
-            
+
             tidy_data = self._merge_with_conflict(data=data, date=date)
 
             # int
@@ -275,16 +281,17 @@ class DataResolver:
 
 if __name__ == "__main__":
     qs = str(input('請輸入要搜索的關鍵字： 例如 google facebook\n')).split()
-    start = str(input('請輸入起始年份 例如：2004\n'))
-    end = str(input('請輸入結尾年份 例如：2019\n'))
+    y_start = str(input('請輸入起始年份 例如：2004\n'))
+    y_end = str(input('請輸入結尾年份 例如：2019\n'))
     daily = str(input('是否需要日資料 (y/n) '))
     t_start = time.time()
     for q in qs:
         print(f'\n開始抓取 {q} ···')
         tt_st = time.time()
-        google_trend = GoogleTrend(q, [start, end], dev=False, daily=daily)
+        google_trend = GoogleTrend(q, [y_start, y_end], dev=False, daily=daily)
         google_trend.main()
         tt_ed = time.time()
         print(f'{q} 約花費 {int(tt_ed-tt_st)}s')
     t_end = time.time()
-    print(f'總共花費 {int(t_end-t_start)}s')
+    print(f'\n總計花費 {int(t_end-t_start)}s')
+    print('點擊右上角離開視窗 ···')
