@@ -114,12 +114,13 @@ class PathResolver:
         return False
 
 class GoogleTrend:
-    def __init__(self, q: str, dr: list, daily: str, dev: bool=False, geo='Global'):
+    def __init__(self, q: str, dr: list, daily: str, dev: bool=False, geo='TW'):
         self.download_button_selector = 'body > div.trends-wrapper > div:nth-child(2) > div > md-content > div > div > div:nth-child(1) > trends-widget > ng-include > widget > div > div > div > widget-actions > div > button.widget-actions-item.export'
+        self.no_data_error_selector = 'body > div.trends-wrapper > div:nth-child(2) > div > md-content > div > div > div:nth-child(1) > trends-widget > ng-include > widget > div > div > ng-include > div > ng-include > div > p.widget-error-title'
 
         self.url = u'https://trends.google.com.tw/trends/explore'
         self.dev = dev
-        self.geo = geo if geo != 'Global' else ''
+        self.geo = geo
         self.ps = path_separate() # path_separate
         self.q = q  # query to search
         self.daily = daily
@@ -127,7 +128,7 @@ class GoogleTrend:
         self.env_dir = os.getcwd()
         self.platform = system()
         self.temp_path = PathResolver(['temp', self.q], mkdir=True)
-        self.data_path_week = PathResolver(['data', 'week', self.q], mkdir=True)
+        self.data_path_week = PathResolver(['data', 'week'], mkdir=True)
         self.data_path_day = PathResolver(['data', 'day'], mkdir=True) if daily else None
         self.driver = self._get_driver()
 
@@ -189,6 +190,15 @@ class GoogleTrend:
         sleep(1)
         self._avoid_rewrite()
 
+    def _isData(self):
+        selector = self.no_data_error_selector
+        try:
+            error = self.driver.find_element_by_css_selector(selector)
+            print(error.text)
+            return False
+        except:
+            return True
+
     def _avoid_rewrite(self):
         temp_path = self.temp_path
         i = 1
@@ -202,7 +212,6 @@ class GoogleTrend:
     def _get_tidy_df_per_day(self):
         resolver = DataResolver(self.q)
         tidy = resolver.tidy_map
-
         df = pd.DataFrame()
         for y in tidy.keys():
             df[f'{y}'] = [e[2] for e in tidy[y]]
@@ -210,7 +219,7 @@ class GoogleTrend:
         return df.set_index('M/D')
 
     def scrapping_per_week(self, sy: int, ey: int):
-        geo_query = f'&geo={self.geo}' if self.geo else ''
+        geo_query = f'&geo={self.geo}'
         cy = sy
         sm = 1
         n = 1
@@ -226,18 +235,22 @@ class GoogleTrend:
         print(f'\n正在合併週資料 ···')
         data_path = self.data_path_week
         temp_path = self.temp_path
+        df = pd.DataFrame()
         i = 1
         cy = sy
+
+        column = []
+        index = []
         while cy <= ey:
-            f_path = data_path.push_ret_pop(f'{cy}.csv')
             csv = pd.read_csv(temp_path.push_ret_pop(f'{i}.csv'))
             data = csv['類別：所有類別'][1:]
-            df = pd.DataFrame()
-            df[f'{self.q}'] = list(data)
-            df['Y/M/D'] = list(data.index)
-            df.set_index('Y/M/D').to_csv(f_path)
+            column += list(data)
+            index += list(data.index)
             cy += 1
             i += 1
+        df[f'{self.q}'] = column
+        df.index = index
+        df.to_csv(data_path.push_ret_pop(f'{self.q}.csv'))
         print(f'Done !\n{self.q} 資料位於 {data_path.path()}')
 
     def scrapping_per_day(self, sy: int, ey: int):
@@ -250,11 +263,10 @@ class GoogleTrend:
 
         def _0_or_1(i: int):
             return '0' if i == 6 else '1'
-        geo_query = f'&geo={self.geo}' if self.geo else ''
+        geo_query = f'&geo={self.geo}'
 
         cy = sy
         sm = 1
-        data_path = self.data_path_day
         while cy <= ey:
             print(f'\n正在抓取 {cy}年 日資料···')
             while sm <= 7:
@@ -263,7 +275,8 @@ class GoogleTrend:
                 sm += 6
                 self._toPage(url)
                 sleep(1)
-                self._download()
+                if self._isData():
+                    self._download()
                 sleep(rd_ms())
             cy += 1
             sm = 1
@@ -274,6 +287,7 @@ class GoogleTrend:
         df = self._get_tidy_df_per_day()
         df.to_csv(data_path.push_ret_pop(f'{self.q}.csv'))
         print(f'Done !\n目標位置在 {data_path.path()}')
+
 
     def main(self):
         start_year = int(self.dr[0])
@@ -292,14 +306,14 @@ class GoogleTrend:
 class DataResolver:
     def __init__(self, q: str):
         self.ps = path_separate()
-        self.env_dir = os.getcwd()
-        self.root = f'{self.env_dir}{self.ps}temp{self.ps}{q}'
+        self.q = q
+        self.temp_path = PathResolver(['temp', q], mkdir=True)
         self.tidy_map = self._tidy_list()
 
     def _tidy_list(self) -> dict:
         path_list = self._temp_file_mapper()
         if len(path_list) == 0:
-            raise Exception(f'{self.root} 沒有暫存資料')
+            raise Exception(f'{self.q} 搜尋資料不足')
 
         _tidy = {}
         for p in path_list:
@@ -320,13 +334,11 @@ class DataResolver:
         return _tidy
 
     def _temp_file_mapper(self) -> list:
-        path = self.root
-        if not os.path.isdir(path):
-            raise Exception(f'{path} 路徑不存在')
+        temp_path = self.temp_path
         i = 1
         l = []
-        while os.path.isfile(f'{self.root}{self.ps}{i}.csv'):
-            l.append(f'{self.root}{self.ps}{i}.csv')
+        while temp_path.isfile(f'{i}.csv'):
+            l.append(temp_path.push_ret_pop(f'{i}.csv'))
             i += 1
         return l
 
@@ -345,7 +357,11 @@ class DataResolver:
 
 def google_trend_cli():
     print(f'\n-----{datetime.now()}-----')
-    # print('')
+    geo = 'TW' if str(
+        input('\n-----搜索區域：預設台灣(y) / 更改區域(n)-----\n')
+    ) in 'yY' else str(
+        input('-----請輸入區域英文縮寫 (全球: Global, 其他地區自行估狗)-----')
+    )
     qs = str(input('-----請輸入要搜索的關鍵字： 例如 google facebook-----\n')).split()
     daily = bool(input('\n-----是否需要日資料? (y/n)-----\n') in 'yY')
     y_range = [2004, valid_year_at_most(daily=daily, output_type='int')]
@@ -365,7 +381,7 @@ def google_trend_cli():
         q = q.replace('-', ' ')
         print(f'\n開始抓取 {q} ···')
         tt_st = time()
-        google_trend = GoogleTrend(q, [y_start, y_end], dev=False, daily=daily)
+        google_trend = GoogleTrend(q, [y_start, y_end], dev=False, daily=daily, geo=geo)
         google_trend.main()
         tt_ed = time()
         print(f'{q} 耗時約 {int(tt_ed-tt_st)}s')
@@ -377,7 +393,7 @@ def main():
     while True:
         if not google_trend_cli(): break
     sleep(rd_ms())
-    print('點擊右上角離開視窗 ···')
+    print('系統將在 2 秒後自動關閉視窗，或是手動點擊右上角離開視窗 ···')
 
 if __name__ == "__main__":
     main()
