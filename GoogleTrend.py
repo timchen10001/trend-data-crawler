@@ -1,24 +1,19 @@
+import os
+from shutil import rmtree
+from time import sleep
+from time import time
+from random import randint
+from platform import system
+from datetime import datetime
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-import shutil
-import os
-import time
-import random
 import pandas as pd
-import platform
 
 
 def rd_ms():
-    return random.randint(1, 2)
-
-
-def remove_folder(path):
-    if os.path.exists(path):
-        shutil.rmtree(path)
-    else:
-        raise Exception(f'{path} not exist')
-
+    return randint(1, 2)
 
 def iTs(i: int) -> str:
     s = ''
@@ -26,25 +21,97 @@ def iTs(i: int) -> str:
         s += '0'
     return s + str(i)
 
-def path_exists(path: str) -> bool:
-    ps = path_separate()
-    if ps in path:
-        return True
-    return False
 
-
-def files_cleaner(path: str):
-    if os.path.isdir(path):
-        remove_folder(path)
-    os.mkdir(path)
+def remove_folder(path):
+    if os.path.exists(path):
+        rmtree(path)
+    else:
+        raise Exception(f'{path} not exist')
 
 def path_separate():
-    plat = platform.system()
+    plat = system()
     ps = ''
     if plat == 'Windows': ps = '\\'
     else: ps = '/'
     return ps
 
+def is_path(path: str) -> bool:
+    ps = path_separate()
+    if ps in path:
+        return True
+    return False
+
+def files_cleaner(path: str):
+    if os.path.isdir(path):
+        remove_folder(path)
+    if not os.path.isdir(path):
+        os.mkdir(path)
+
+def valid_number(ss: str, output_type: str='int'):
+    valid_int = [str(i) for i in range(10)]
+    valid_ss = ''
+    for s in ss:
+        if s in valid_int: valid_ss += s
+    return valid_ss if output_type == 'str' else int(valid_ss)
+
+def is_valid_year(y_r: list, year: int)->bool:
+    if len(y_r) != 2:
+        raise Exception('the length in year_range must be 2')
+    return (year >= y_r[0] and year <= y_r[1])
+
+def valid_year_at_most(daily: bool, output_type: str='int'):
+    y = datetime.now().year
+    if daily:
+        return y-1 if output_type == 'int' else str(y-1)
+    return y if output_type == 'int' else str(y)
+
+class PathResolver:
+    def __init__(self, nodes: list=[], mkdir=False):
+        self._ps = self._path_separater()
+        self._root = os.getcwd()
+        self._nodes = nodes
+        if mkdir: self.mkdir()
+
+    def _path_separater(self):
+        plat = system()
+        ps = ''
+        if plat == 'Windows': ps = '\\'
+        else: ps = '/'
+        return ps
+
+    def path(self) -> str:
+        path = self._root
+        for node in self._nodes:
+            path += f'{self._ps}{node}'
+        return path
+
+    def push_back(self, node: str):
+        self._nodes.append(node)
+
+    def pop_back(self):
+        self._nodes.pop()
+
+    def mkdir(self):
+        if len(self._nodes) == 0: return
+        ps = self._ps
+        p = self._root
+        for node in self._nodes:
+            if not node: continue
+            p += f'{ps}{node}'
+            if not os.path.isdir(p):
+                os.mkdir(p)
+        return p
+
+    def push_ret_pop(self, node: str):
+        self.push_back(node)
+        path_str = self.path()
+        self.pop_back()
+        return path_str
+
+    def isfile(self, file_path: str)->bool:
+        fp = self.push_ret_pop(file_path)
+        if os.path.isfile(fp): return True
+        return False
 
 class GoogleTrend:
     def __init__(self, q: str, dr: list, daily: str, dev: bool=False, geo='Global'):
@@ -53,84 +120,84 @@ class GoogleTrend:
         self.url = u'https://trends.google.com.tw/trends/explore'
         self.dev = dev
         self.geo = geo if geo != 'Global' else ''
-        self.ps = path_separate() # path_seperate
+        self.ps = path_separate() # path_separate
         self.q = q  # query to search
         self.daily = daily
         self.dr = dr  # date range
         self.env_dir = os.getcwd()
-        self.platform = platform.system()
+        self.platform = system()
+        self.temp_path = PathResolver(['temp', self.q], mkdir=True)
+        self.data_path_week = PathResolver(['data', 'week', self.q], mkdir=True)
+        self.data_path_day = PathResolver(['data', 'day'], mkdir=True) if daily else None
         self.driver = self._get_driver()
 
     def _get_driver(self) -> webdriver.chrome.webdriver.WebDriver:
         headless = not self.dev
 
-        driver_path = self._get_driver_path()
-        data_path = self._create_path(f'{self.ps}temp')
-        data_path += f'{self.ps}{self.q}'
+        driver_path = PathResolver(['driver'])
+        driver_path.push_back(self._driver_file_name())
 
-        files_cleaner(data_path)
+        temp_path = self.temp_path.path()
+
+        files_cleaner(temp_path)
 
         download_prefs = {
-            'download.default_directory': data_path,
+            'download.default_directory': temp_path,
             'download.prompt_for_download': False,
             'profile.default_content_settings.popups': 0
         }
 
         chrome_options = Options()
+        chrome_options.add_experimental_option('prefs', download_prefs)
+
         if headless:
             chrome_options.add_argument('--window-size=1440,900')
             chrome_options.add_argument('--headless')
-        chrome_options.add_experimental_option('prefs', download_prefs)
+
         driver = webdriver.Chrome(
-            executable_path=driver_path,
+            executable_path=driver_path.path(),
             options=chrome_options
         )
         driver.set_window_size(1440, 900)
         driver.get(self.url)
-        time.sleep(0.5)
+        sleep(0.5)
         driver.refresh()
         return driver
 
-    def _create_path(self, path: str):
-        if not path_exists(path=path):
-            return path
-        split_p = path.split(self.ps)
-        p = f'{self.env_dir}'
-        for node in split_p:
-            if not node:
-                continue
-            p += f'{self.ps}{node}'
-            if not os.path.isdir(p):
-                os.mkdir(p)
-        return p
 
-    def _get_driver_path(self):
-        path = rf'{self.env_dir}{self.ps}driver{self.ps}chromedriver'
-        if self.platform == 'Windows': path += '.exe'
-        elif self.platform == 'Linux': path += '-linux'
-        return path
+    def _driver_file_name(self):
+        file_name = 'chromedriver'
+        if self.platform == 'Windows': file_name += '.exe'
+        elif self.platform == 'Linux': file_name += '-linux'
+        return file_name
 
     def _toPage(self, url):
         self.driver.get(url)
-        time.sleep(rd_ms())
+        sleep(rd_ms())
+        print(self.driver.current_url)
 
     def _download(self):
         headless = not self.dev
         selector = self.download_button_selector
-        # download = self.driver.find_element(By.CSS_SELECTOR, selector)
-        download = self.driver.find_element_by_css_selector(selector)
-        time.sleep(rd_ms())
+        try:
+            # download = self.driver.find_element(By.CSS_SELECTOR, selector)
+            download = self.driver.find_element_by_css_selector(selector)
+        except:
+            raise Exception(f'{self.driver.current_url} no trending data')
+        sleep(rd_ms())
         download.click()
-        time.sleep(1)
+        sleep(1)
         self._avoid_rewrite()
-        print(self.driver.current_url)
 
     def _avoid_rewrite(self):
-        temp_path = f'{self.env_dir}{self.ps}temp{self.ps}{self.q}'
+        temp_path = self.temp_path
         i = 1
-        while os.path.isfile(f'{temp_path}{self.ps}{i}.csv'): i+= 1
-        avoid_rewrite_path = f'{temp_path}{self.ps}{i}.csv'
-        os.rename(f'{temp_path}{self.ps}multiTimeline.csv', avoid_rewrite_path)
+        new_path = temp_path.push_ret_pop(f'{i}.csv')
+        while os.path.isfile(new_path):
+            i+= 1
+            new_path = temp_path.push_ret_pop(f'{i}.csv')
+        origin_path = temp_path.push_ret_pop('multiTimeline.csv')
+        os.rename(origin_path, new_path)
 
     def _get_tidy_df_per_day(self):
         resolver = DataResolver(self.q)
@@ -146,34 +213,32 @@ class GoogleTrend:
         geo_query = f'&geo={self.geo}' if self.geo else ''
         cy = sy
         sm = 1
+        n = 1
         while cy <= ey:
-            print(f'正在抓取 {cy}年 周資料···')
+            print(f'\n正在抓取 {cy}年 週資料···')
             url = f'{self.url}?date={cy}-01-01%20{cy}-12-31&q={self.q}{geo_query}'
             self._toPage(url)
-            time.sleep(1)
+            sleep(1)
             self._download()
-            time.sleep(rd_ms())
+            sleep(rd_ms())
             cy += 1
-
     def _merge_per_week(self, sy: int, ey: int):
-        print(f'正在合併週資料 ···')
-        data_path = self._create_path(f'{self.ps}data{self.ps}week{self.ps}{self.q}')
-        files_cleaner(data_path)
-        print(f'合併完成 ···\n目標位置在 {data_path}')
-        temp_path = f'{self.env_dir}{self.ps}temp{self.ps}{self.q}'
+        print(f'\n正在合併週資料 ···')
+        data_path = self.data_path_week
+        temp_path = self.temp_path
         i = 1
         cy = sy
         while cy <= ey:
-            f_path = f'{data_path}{self.ps}{cy}.csv'
-            csv = pd.read_csv(f'{temp_path}{self.ps}{i}.csv')
+            f_path = data_path.push_ret_pop(f'{cy}.csv')
+            csv = pd.read_csv(temp_path.push_ret_pop(f'{i}.csv'))
             data = csv['類別：所有類別'][1:]
             df = pd.DataFrame()
             df[f'{self.q}'] = list(data)
             df['Y/M/D'] = list(data.index)
-            df = df.set_index('Y/M/D')
-            df.to_csv(f_path)
+            df.set_index('Y/M/D').to_csv(f_path)
             cy += 1
             i += 1
+        print(f'Done !\n{self.q} 資料位於 {data_path.path()}')
 
     def scrapping_per_day(self, sy: int, ey: int):
         # sy: start year
@@ -183,44 +248,44 @@ class GoogleTrend:
         # em: end month
         # iTs: integer to string
 
-        def _0_or_1(i: int) -> str:
+        def _0_or_1(i: int):
             return '0' if i == 6 else '1'
         geo_query = f'&geo={self.geo}' if self.geo else ''
 
         cy = sy
         sm = 1
+        data_path = self.data_path_day
         while cy <= ey:
-            print(f'正在抓取 {cy}年 日資料···')
+            print(f'\n正在抓取 {cy}年 日資料···')
             while sm <= 7:
                 url = f'{self.url}?'
                 url += f'date={cy}-{iTs(sm)}-01%20{cy}-{iTs(sm+5)}-3{_0_or_1(sm+5)}&q={self.q}{geo_query}'
                 sm += 6
                 self._toPage(url)
-                time.sleep(1)
+                sleep(1)
                 self._download()
-                time.sleep(rd_ms())
+                sleep(rd_ms())
             cy += 1
             sm = 1
 
     def _merge_per_day(self):
-        print(f'正在合併資料 ···')
-        data_path = self._create_path(f'{self.ps}data{self.ps}day{self.ps}{self.q}')
-        files_cleaner(data_path)
-        print(f'合併完成 ···\n目標位置在 {data_path}')
-        data_path += f'{self.ps}{self.q}.csv'
-
+        print(f'\n正在合併日資料 ···')
+        data_path = self.data_path_day
         df = self._get_tidy_df_per_day()
-        df.to_csv(data_path)
+        df.to_csv(data_path.push_ret_pop(f'{self.q}.csv'))
+        print(f'Done !\n目標位置在 {data_path.path()}')
 
     def main(self):
         start_year = int(self.dr[0])
         end_year = int(self.dr[1])
-        if self.daily == 'y' or self.daily == 'Y':
+        temp_path = self.temp_path
+        if self.daily:
             self.scrapping_per_day(start_year, end_year)
             self._merge_per_day()
-            files_cleaner(f'{self.env_dir}{self.ps}temp{self.ps}{self.q}')
+            files_cleaner(temp_path.path())
         self.scrapping_per_week(start_year, end_year)
         self._merge_per_week(start_year, end_year)
+        files_cleaner(temp_path.path())
         self.driver.close()
 
 # data cleaner
@@ -229,7 +294,6 @@ class DataResolver:
         self.ps = path_separate()
         self.env_dir = os.getcwd()
         self.root = f'{self.env_dir}{self.ps}temp{self.ps}{q}'
-        self.valid_int = [str(i) for i in range(10)]
         self.tidy_map = self._tidy_list()
 
     def _tidy_list(self) -> dict:
@@ -279,19 +343,41 @@ class DataResolver:
             i += 1
         return tidy
 
-if __name__ == "__main__":
-    qs = str(input('請輸入要搜索的關鍵字： 例如 google facebook\n')).split()
-    y_start = str(input('請輸入起始年份 例如：2004\n'))
-    y_end = str(input('請輸入結尾年份 例如：2019\n'))
-    daily = str(input('是否需要日資料 (y/n) '))
-    t_start = time.time()
+def google_trend_cli():
+    print(f'\n-----{datetime.now()}-----')
+    # print('')
+    qs = str(input('-----請輸入要搜索的關鍵字： 例如 google facebook-----\n')).split()
+    daily = bool(input('\n-----是否需要日資料? (y/n)-----\n') in 'yY')
+    y_range = [2004, valid_year_at_most(daily=daily, output_type='int')]
+    y_start: int
+    y_end: int
+    while True:
+        y_start = valid_number(input('\n-----請輸入起始年份： (2004 require at least)-----\n'), output_type='int')
+        if is_valid_year(y_range, y_start): break
+        else: print(f'\n!!! 起始年份必須介於 {y_range[0]} ~ {y_range[1]}之間')
+    while True:
+        y_end = valid_number(input(f'\n請輸入結尾年份： ({y_range[1]} require at most)\n'), output_type='int')
+        if is_valid_year(y_range, y_end): break
+        else: print(f'\n!!! 結尾年份必須介於 {y_range[0]} ~ {y_range[1]}')
+
+    t_start = time()
     for q in qs:
+        q = q.replace('-', ' ')
         print(f'\n開始抓取 {q} ···')
-        tt_st = time.time()
+        tt_st = time()
         google_trend = GoogleTrend(q, [y_start, y_end], dev=False, daily=daily)
         google_trend.main()
-        tt_ed = time.time()
-        print(f'{q} 約花費 {int(tt_ed-tt_st)}s')
-    t_end = time.time()
-    print(f'\n總計花費 {int(t_end-t_start)}s')
+        tt_ed = time()
+        print(f'{q} 耗時約 {int(tt_ed-tt_st)}s')
+    t_end = time()
+    print(f'\n總計耗時約 {int(t_end-t_start)}s')
+    return input('-----繼續 (y) / 結束 (n)-----\n') in 'yY'
+
+def main():
+    while True:
+        if not google_trend_cli(): break
+    sleep(rd_ms())
     print('點擊右上角離開視窗 ···')
+
+if __name__ == "__main__":
+    main()
