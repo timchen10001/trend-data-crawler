@@ -16,21 +16,23 @@ class PathResolver:
     def _path_separater(self):
         plat = system()
         ps = ''
-        if plat == 'Windows': ps = '\\'
-        else: ps = '/'
-        return ps
+        if plat == 'Windows': 
+            return '\\'
+        return '/'
 
-    def path(self, merge:bool = False) -> str:
+    def path(self, merge:bool = False) -> (str):
         path = self._root
         for node in self._nodes:
             path += f'{self._ps}{node}'
         return path
 
-    def push_back(self, node):
+    def push_back(self, node: str or list):
         if type(node) == str:
             self._nodes.append(node)
-        else:
+        elif type(node) == list:
             self._nodes.extend(node)
+        else:
+            raise TypeError(f'type of {node} must be str or list')
 
     def pop_back(self, times: int=1):
         while times > 0:
@@ -80,7 +82,7 @@ class DataResolver:
         self.temp_path = PathResolver(['temp', q], mkdir=True)
         self.tidy_map = self._tidy_list()
 
-    def _tidy_list(self) -> dict:
+    def _tidy_list(self) -> (dict):
         path_list = self._temp_file_mapper()
         if len(path_list) == 0:
             raise Exception(f'{self.q} 搜尋資料不足')
@@ -103,7 +105,7 @@ class DataResolver:
                 _tidy[year] = tidy_data
         return _tidy
 
-    def _temp_file_mapper(self) -> list:
+    def _temp_file_mapper(self) -> (list):
         temp_path = self.temp_path
         i = 1
         l = []
@@ -112,7 +114,7 @@ class DataResolver:
             i += 1
         return l
 
-    def _merge_with_conflict(self, data: list, date: list) -> list:
+    def _merge_with_conflict(self, data: list, date: list) -> (list):
         tidy = []
         i = 0
         for e, val in zip(date, data):

@@ -5,11 +5,11 @@ from time import sleep
 
 def google_trend_cli(geo:str, daily:str):
     geo = '' if geo == 'Global' else geo
-    qs = str(input('\n-----請輸入要搜索的關鍵字： 例如 google facebook-----\n')).split()  
+    qs = input('\n-----請輸入要搜索的關鍵字： 例如 google facebook-----\n').split()  
     y_range = [2004, valid_year_at_most(daily=daily, output_type='int')]
     y_start: int
     y_end: int
-    if str(input('\n-----是否爬取全部資料？ 是(y) / 否(n)-----\n')) in 'yY':
+    if input('\n-----是否爬取全部資料？ 是(y) / 否(n)-----\n') in 'yY':
         year_at_most_default = default_at_most(daily=daily)
         y_start = year_at_most_default[0]
         y_end = year_at_most_default[1]

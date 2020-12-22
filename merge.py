@@ -3,6 +3,7 @@ from Resolvers import PathResolver
 import pandas as pd
 from time import sleep
 from datetime import datetime
+from numpy import median
 
 # 取得遺漏年份補集合
 def get_com_set(years: list, at_most: int):
@@ -75,7 +76,6 @@ def merge_day(new_folder: str):
     df.to_csv(write_path)
     print(f'日資料 合併完成 !\n')
 
-
 def merge_week(geo:str, new_folder: str):
     folder = 'week'
     pr = PathResolver(['data'])
@@ -90,31 +90,46 @@ def merge_week(geo:str, new_folder: str):
     data = []
     date = []
     index = []
+    median_list = []
 
     date_time = 'Y/M/D' if folder == 'week' else 'M/D'
 
-    for f_p, f_name in zip(
-        file_path_list, 
-        files_name_list
-    ):
+    for f_p in file_path_list:
         csv = pd.read_csv(f_p)
         key = list(csv.columns)[1]
 
+        # treat data
         col = csv[key]
+
+        # treat date
         row = csv[list(csv.columns)[0]]
-        index_ = [ key for _ in range(len(row)) ]
         if len(row) == 0: 
             os.remove(f_p)
             continue
+        
+        # treat keys
+        keys = [ key for _ in range(len(row)) ]
 
-        index.extend(index_)
+        # treat median
+        med = []
+        for i in range(len(col)):
+            if i < 8: 
+                med.append('NA')
+            else:
+                medi = median(col[i-8 : i])
+                med.append(medi)
+
+        index.extend(keys)
         data.extend(col)
         date.extend(row)
+        median_list.extend(med)
 
     df = pd.DataFrame()
+    df[ 'key' ] = index
     df[ date_time ] = date
     df[ geo ] = data
-    df.index = index
+    df[ 'median' ] = median_list
+    df = df.set_index('key')
 
     pr.push_back(new_folder)
     pr.mkdir()

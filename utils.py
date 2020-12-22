@@ -7,7 +7,7 @@ from datetime import datetime
 def rd_ms():
     return randint(1, 3)
 
-def iTs(i: int) -> str:
+def iTs(i: int) -> (str):
     s = ''
     if i < 10:
         s += '0'
@@ -27,7 +27,7 @@ def path_separate():
     else: ps = '/'
     return ps
 
-def is_path(path: str) -> bool:
+def is_path(path: str) -> (bool):
     ps = path_separate()
     if ps in path:
         return True
@@ -46,7 +46,7 @@ def valid_number(ss: str, output_type: str='int'):
         if s in valid_int: valid_ss += s
     return valid_ss if output_type == 'str' else int(valid_ss)
 
-def is_valid_year(y_r: list, year: int)->bool:
+def is_valid_year(y_r: list, year: int) -> (bool):
     if len(y_r) != 2:
         raise Exception('the length in year_range must be 2')
     return (year >= y_r[0] and year <= y_r[1])

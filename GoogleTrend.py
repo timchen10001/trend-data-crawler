@@ -30,7 +30,7 @@ class GoogleTrend:
         self.data_path_day = PathResolver(['data', 'day'], mkdir=True) if daily else None
         self.driver = self._get_driver()
 
-    def _get_driver(self) -> webdriver.chrome.webdriver.WebDriver:
+    def _get_driver(self) -> (webdriver.chrome.webdriver.WebDriver):
         headless = not self.dev
 
         driver_path = PathResolver(['driver'])
