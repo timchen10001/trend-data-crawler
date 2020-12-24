@@ -3,9 +3,10 @@ import os
 from shutil import rmtree
 from platform import system
 from datetime import datetime
+from numpy import log
 
 def rd_ms():
-    return randint(1, 3)
+    return randint(1, 2)
 
 def iTs(i: int) -> (str):
     s = ''
@@ -62,3 +63,9 @@ def default_at_most(daily: bool):
     if daily:
         return [2004, y-1]
     return [2004, y]
+
+def user_agent():
+    return f'user-agent="MQQBrowser/26 Mozilla/5.0 (Linux; U; Android 2.3.7; zh-cn; MB200 Build/GRJ22; CyanogenMod-7) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1"'
+
+def ln(num):
+    return log(num)

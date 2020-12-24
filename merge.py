@@ -76,12 +76,18 @@ def merge_day(new_folder: str):
     df.to_csv(write_path)
     print(f'日資料 合併完成 !\n')
 
-def merge_week(geo:str, new_folder: str):
+def merge_week(sequence_type: str, geo:str, new_folder: str):
     folder = 'week'
     pr = PathResolver(['data'])
 
     src_path = pr.push_ret_pop(folder)
-    files_name_list = os.listdir(path=src_path)
+
+    files_name_list = []
+    for file in os.listdir(path=src_path):
+        if sequence_type == 'cross-year' and 'cross-year' in file:
+            files_name_list.append(file)
+        elif sequence_type == 'none-cross' and not 'cross-year' in file:
+            files_name_list.append(file)
 
     pr.push_back(node=folder)
     file_path_list = pr.push_ret_pop(nodes=files_name_list)
@@ -90,50 +96,59 @@ def merge_week(geo:str, new_folder: str):
     data = []
     date = []
     index = []
+    index_tw = []
     median_list = []
-
-    date_time = 'Y/M/D' if folder == 'week' else 'M/D'
 
     for f_p in file_path_list:
         csv = pd.read_csv(f_p)
-        key = list(csv.columns)[1]
+
+        key_map = list(csv.columns)
+        key = key_map[1]
+        name = key_map[0]
 
         # treat data
         col = csv[key]
 
         # treat date
         row = csv[list(csv.columns)[0]]
-        if len(row) == 0: 
+
+        size = len(row)
+
+        if size == 0:
             os.remove(f_p)
             continue
-        
+
         # treat keys
-        keys = [ key for _ in range(len(row)) ]
+        keys = [ key for _ in range(size) ]
+        keys_tw = [ name for _ in range(size) ]
 
         # treat median
         med = []
         for i in range(len(col)):
-            if i < 8: 
+            if i < 8:
                 med.append('NA')
             else:
                 medi = median(col[i-8 : i])
                 med.append(medi)
 
         index.extend(keys)
+        index_tw.extend(keys_tw)
         data.extend(col)
         date.extend(row)
         median_list.extend(med)
 
     df = pd.DataFrame()
-    df[ 'key' ] = index
-    df[ date_time ] = date
-    df[ geo ] = data
+    df[ 'ticker' ] = index
+    df[ 'company' ] = index_tw
+    df[ 'date' ] = date
+    df[ 'Raw_SVI' ] = data
     df[ 'median' ] = median_list
-    df = df.set_index('key')
+    # df[ 'adjust_SVI' ] =
+    df = df.set_index('ticker')
 
     pr.push_back(new_folder)
     pr.mkdir()
-    pr.push_back(f'{folder}.csv')
+    pr.push_back(f'{folder}.csv' if sequence_type == 'none-cross' else f'{folder} (cross-year).csv')
     write_path = pr.path()
     df.to_csv(write_path)
     print(f'週資料 合併完成 !\n')
