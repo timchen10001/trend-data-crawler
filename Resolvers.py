@@ -5,20 +5,13 @@ from utils import *
 
 class PathResolver:
     def __init__(self, nodes: list=[], mkdir=False):
-        self._ps = self._path_separater()
+        self._ps = path_separate()
         self._root = os.getcwd()
         self._nodes = nodes
         if mkdir: self.mkdir()
 
     def clear(self):
         self._nodes = []
-
-    def _path_separater(self):
-        plat = system()
-        ps = ''
-        if plat == 'Windows': 
-            return '\\'
-        return '/'
 
     def path(self, merge:bool = False) -> (str):
         path = self._root
@@ -80,9 +73,8 @@ class DataResolver:
         self.ps = path_separate()
         self.q = q
         self.temp_path = PathResolver(['temp', q], mkdir=True)
-        self.tidy_map = self._tidy_list()
 
-    def _tidy_list(self) -> (dict):
+    def tidy_map(self) -> (dict):
         path_list = self._temp_file_mapper()
         if len(path_list) == 0:
             raise Exception(f'{self.q} 搜尋資料不足')
@@ -99,9 +91,9 @@ class DataResolver:
             # int
             year = date[1].split('-')[0]
 
-            if year in _tidy.keys():
+            if year in _tidy.keys(): 
                 _tidy[year] += tidy_data
-            else:
+            else: 
                 _tidy[year] = tidy_data
         return _tidy
 

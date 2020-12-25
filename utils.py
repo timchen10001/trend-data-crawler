@@ -64,8 +64,24 @@ def default_at_most(daily: bool):
         return [2004, y-1]
     return [2004, y]
 
-def user_agent():
-    return f'user-agent="MQQBrowser/26 Mozilla/5.0 (Linux; U; Android 2.3.7; zh-cn; MB200 Build/GRJ22; CyanogenMod-7) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1"'
-
 def ln(num):
     return log(num)
+
+def toMapOmitValue(datas: list, medians: list ) -> (list):
+    adjust = []
+    for d, m in zip(datas, medians):
+        asvi = 0
+        if m == 'NA': 
+            asvi = "NA"
+        elif d == 0 and m == 0:
+            asvi = 0
+        elif d != 0 and m == 0:
+            asvi = ln(d) - 0
+        elif d == 0 and m != 0:
+            asvi = 0 - ln(m)
+        else:
+            asvi = ln(d) - ln(m)
+        adjust.append(asvi)
+    return adjust
+        
+    

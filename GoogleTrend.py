@@ -11,19 +11,20 @@ from Resolvers import PathResolver
 from Resolvers import DataResolver
 from utils import *
 
+from pprint import pprint
+
 class GoogleTrend:
-    def __init__(self, q: str, dr: list, daily: str, dev: bool=False, geo='TW'):
+    def __init__(self, q: str, dr: list, daily: str, dev: bool = False, geo='TW'):
         self.download_button_selector = 'body > div.trends-wrapper > div:nth-child(2) > div > md-content > div > div > div:nth-child(1) > trends-widget > ng-include > widget > div > div > div > widget-actions > div > button.widget-actions-item.export'
         self.no_data_error_selector = 'body > div.trends-wrapper > div:nth-child(2) > div > md-content > div > div > div:nth-child(1) > trends-widget > ng-include > widget > div > div > ng-include > div > ng-include > div > p.widget-error-title'
         self.input_selector = '#search_text_table'
         self.submit_selector = '#bttb > table > tbody > tr > td > div > form > table > tbody > tr > td:nth-child(3) > input[type=button]'
         self.result_selector = '#stocks_list_table > table > tbody > tr > td > a'
 
-
         self.url = u'https://trends.google.com.tw/trends/explore'
         self.dev = dev
         self.geo = geo
-        self.ps = path_separate() # path_separate
+        self.ps = path_separate()  # path_separate
         self.q = q  # query to search
         self.key = ''
         self.daily = daily
@@ -32,9 +33,10 @@ class GoogleTrend:
         self.platform = system()
         self.temp_path = PathResolver(['temp', self.q], mkdir=True)
         self.data_path_week = PathResolver(['data', 'week'], mkdir=True)
-        self.data_path_day = PathResolver(['data', 'day'], mkdir=True) if daily else None
+        self.data_path_day = PathResolver(
+            ['data', 'day'], mkdir=True) if daily else None
         self.driver = self._get_driver()
-        while self.has_set_query_detail(): break
+        self.has_set_query_detail()
         self.to_google_trend_page()
 
     def _get_driver(self) -> (webdriver.chrome.webdriver.WebDriver):
@@ -56,7 +58,6 @@ class GoogleTrend:
         chrome_options = Options()
         chrome_options.add_experimental_option('prefs', download_prefs)
         chrome_options.add_argument('--disable-notifications')
-        # chrome_options.add_argument( user_agent() )
         chrome_options.add_argument('blink-settings=imagesEnabled=false')
 
         if headless:
@@ -68,6 +69,7 @@ class GoogleTrend:
             options=chrome_options
         )
         driver.set_window_size(1440, 900)
+        print(f'\n分析公司代號 {self.q} ···')
         driver.get('https://pchome.megatime.com.tw/search')
         sleep(rd_ms())
         return driver
@@ -78,32 +80,35 @@ class GoogleTrend:
         self.driver.refresh()
 
     def has_set_query_detail(self) -> (bool):
+        input_selector = self.driver.find_element_by_css_selector(
+            self.input_selector)
+        sleep(0.5)
+        input_selector.click()
+        sleep(0.5)
+        input_selector.clear()
+        sleep(0.5)
+        input_selector.send_keys(self.q)
+        sleep(0.5)
+        submit = self.driver.find_element_by_css_selector(self.submit_selector)
+        sleep(0.5)
+        submit.click()
+        sleep(0.5)
         try:
-            input_selector = self.driver.find_element_by_css_selector(self.input_selector)
-            sleep(0.5)
-            input_selector.click()
-            sleep(0.5)
-            input_selector.clear()
-            sleep(0.5)
-            input_selector.send_keys(self.q)
-            sleep(0.5)
-            submit = self.driver.find_element_by_css_selector(self.submit_selector)
-            sleep(0.5)
-            submit.click()
-            sleep(0.5)
-            self.key = self.driver.find_element_by_css_selector(self.result_selector).text.split(' ')[1]
+            key = self.driver.find_element_by_css_selector(
+                self.result_selector).text.split(' ')[1]
+            if key:
+                self.key = key
             print(f'\n開始擷取 {self.key} 資料···\n')
-            return True
         except:
+            self.key = '...'
             sleep(rd_ms() + 1)
-            return False
-
-
 
     def _driver_file_name(self):
         file_name = 'chromedriver'
-        if self.platform == 'Windows': file_name += '.exe'
-        elif self.platform == 'Linux': file_name += '-linux'
+        if self.platform == 'Windows':
+            file_name += '.exe'
+        elif self.platform == 'Linux':
+            file_name += '-linux'
         return file_name
 
     def _toPage(self, url):
@@ -135,20 +140,10 @@ class GoogleTrend:
         i = 1
         new_path = temp_path.push_ret_pop(f'{i}.csv')
         while os.path.isfile(new_path):
-            i+= 1
+            i += 1
             new_path = temp_path.push_ret_pop(f'{i}.csv')
         origin_path = temp_path.push_ret_pop('multiTimeline.csv')
         os.rename(origin_path, new_path)
-
-    def _get_tidy_df_per_day(self):
-        resolver = DataResolver(self.q)
-        tidy = resolver.tidy_map
-        df = pd.DataFrame()
-        for y in tidy.keys():
-            if len(tidy[y]) != 366: continue
-            df[f'{y}'] = [e[2] for e in tidy[y]]
-            df['M/D'] = [f'{e[0]}-{e[1]}' for e in tidy[y]]
-        return df.set_index('M/D')
 
     def scrapping_per_week(self, sequence_type: str, sy: int, ey: int):
         geo_query = f'&geo={self.geo}'
@@ -165,15 +160,13 @@ class GoogleTrend:
                 sleep(rd_ms())
                 cy += 1
             elif sequence_type == 'cross-year':
-                print(f'\n正在抓取 {self.q} {self.key} {cy} 跨 {cy+1}年 週資料···')
+                print(f'\n正在抓取 {self.q} {self.key} {cy}年 跨 {cy+1}年 週資料···')
                 url = f'{self.url}?date={cy}-07-01%20{cy+1}-6-30&q={self.q}{geo_query}'
                 self._toPage(url)
                 sleep(1)
                 self._download()
                 sleep(rd_ms())
                 cy += 1
-
-
 
     def _merge_per_week(self, sequence_type: str, sy: int, ey: int):
         file_name = ''
@@ -193,7 +186,8 @@ class GoogleTrend:
         column = []
         index = []
         while cy <= ey:
-            csv = pd.read_csv(filepath_or_buffer=temp_path.push_ret_pop(f'{i}.csv'))
+            csv = pd.read_csv(
+                filepath_or_buffer=temp_path.push_ret_pop(f'{i}.csv'))
             data = csv['類別：所有類別'][1:]
             column += list(data)
             index += list(data.index)
@@ -201,7 +195,8 @@ class GoogleTrend:
             i += 1
         df[f'{self.q}'] = column
         df[f'{self.key}'] = index
-        df.set_index(f'{self.key}').to_csv(path_or_buf=data_path.push_ret_pop(file_name))
+        df.set_index(f'{self.key}').to_csv(
+            path_or_buf=data_path.push_ret_pop(file_name))
         print(f'Done !\n{self.q} 資料位於 {data_path.path()}')
 
     def scrapping_per_day(self, sy: int, ey: int):
@@ -232,13 +227,44 @@ class GoogleTrend:
             cy += 1
             sm = 1
 
-    def _merge_per_day(self):
+    def _merge_per_day(self, table_type: str = 'single-column'):
         print(f'\n正在合併日資料 ···')
         data_path = self.data_path_day
-        df = self._get_tidy_df_per_day()
+        df = self._get_tidy_df_per_day(table_type=table_type)
         df.to_csv(data_path.push_ret_pop(f'{self.q}.csv'))
         print(f'Done !\n目標位置在 {data_path.path()}')
 
+    def _get_tidy_df_per_day(self, table_type: str):
+        resolver = DataResolver(self.q)
+        tidy = resolver.tidy_map()
+        df = pd.DataFrame()
+
+        if table_type == 'multi-column':
+            for y in tidy.keys():
+                if len(tidy[y]) != 366:
+                    continue
+                df[f'{y}'] = [e[2] for e in tidy[y]]
+                df['M/D'] = [f'{e[0]}-{e[1]}' for e in tidy[y]]
+            return df.set_index('M/D')
+
+        if table_type == 'single-column':
+            key = []
+            q = []
+            for y in tidy.keys():
+                key_ = []
+                q_ = []
+                for t in tidy[y]:
+                    _y = y
+                    _m = t[0]
+                    _d = t[1]
+                    _data = t[2]
+                    key_.append(f'{_y}-{_m}-{_d}')
+                    q_.append(_data)
+                key.extend(key_)
+                q.extend(q_)
+            df[f'{self.key}'] = key
+            df[f'{self.q}'] = q
+            return df.set_index(f'{self.key}')
 
     def main(self):
         start_year = int(self.dr[0])
