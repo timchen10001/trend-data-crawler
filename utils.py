@@ -67,6 +67,25 @@ def default_at_most(daily: bool):
 def ln(num):
     return log(num)
 
+# merge
+# 取得遺漏年份補集合
+def get_com_set(years: list, at_most: int):
+    com_set = []
+    for y in range(2004, at_most+1):
+        if not str(y) in years:
+            com_set.append(str(y))
+    return com_set
+
+def tidy_array(data):
+    tidy = []
+    for ele in data:
+        s_ele = str(ele)
+        if s_ele == 'NA' or s_ele == 'NaN' or s_ele == 'nan':
+            tidy.append('NA')
+        else:
+            tidy.append(ele)
+    return tidy
+
 def toMapOmitValue(datas: list, medians: list ) -> (list):
     adjust = []
     for d, m in zip(datas, medians):
@@ -83,5 +102,4 @@ def toMapOmitValue(datas: list, medians: list ) -> (list):
             asvi = ln(d) - ln(m)
         adjust.append(asvi)
     return adjust
-        
     
