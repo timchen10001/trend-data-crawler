@@ -141,8 +141,8 @@ def dot(s: float):
     d = '·'
     for i in range(3):
         c = f'\r{d}'
-        if i == 2: c += ' '
 
         print(c, end='')
         d += '·'
         sleep(s)
+    print(' ', end='')

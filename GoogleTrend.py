@@ -208,10 +208,10 @@ class GoogleTrend:
         column = []
         index = []
         while cy <= ey:
-            file_name = f'{i}.csv'
-            if temp_path.isfile(file_name): 
+            f_name = f'{i}.csv'
+            if temp_path.isfile(f_name): 
                 csv = pd.read_csv(
-                    filepath_or_buffer=temp_path.push_ret_pop(file_name))
+                    filepath_or_buffer=temp_path.push_ret_pop(f_name))
                 data = csv['類別：所有類別'][1:]
                 column += list(data)
                 index += list(data.index)
@@ -245,8 +245,8 @@ class GoogleTrend:
                 sm += 6
                 self._toPage(url)
                 sleep(1)
-                if self._isError(): continue
-                if not self._download(): continue
+                if self._isData():
+                    if not self._download(): continue
                 sleep(rd_ms())
             cy += 1
             sm = 1

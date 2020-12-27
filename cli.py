@@ -62,11 +62,14 @@ def taiwan_stock_cli(
                 print(f'\n!!! 結尾年份必須介於 {y_range[0]} ~ {y_range[1]}')
         year_at_most_default = [y_start, y_end]
 
-    while True:
-        if not google_trend_cli(geo=geo, daily=daily, y_range=year_at_most_default, pspam=pspam):
-            sleep(sleep_time)
-            break
-
+    try:
+        while True:
+            if not google_trend_cli(geo=geo, daily=daily, y_range=year_at_most_default, pspam=pspam):
+                sleep(sleep_time)
+                break
+    except:
+        print('\n中斷爬蟲中')
+        dot(1)
     merge_week(sequence_type='none-cross', geo=geo,
                new_folder='merged', cn=columns_name)
     merge_week(sequence_type='cross-year', geo=geo,
@@ -77,4 +80,3 @@ def taiwan_stock_cli(
 
     print('\n----- 系統將在 2 秒後自動關閉視窗，或是手動點擊右上角離開視窗 ··· -----')
     sleep(1)
-
