@@ -1,7 +1,10 @@
 import os
 from platform import system
 from pandas import read_csv
-from utils import *
+
+def path_separate():
+    plat = system()
+    return '\\' if plat == 'Windows' else '/'
 
 class PathResolver:
     def __init__(self, nodes: list=[], mkdir=False):

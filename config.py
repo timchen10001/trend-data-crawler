@@ -18,7 +18,7 @@ def tw_stock_config():
         for col in cols:
             setting = config[col][0]
             print(f'\n{col}: {setting}')
-        print('\n----- ☝️ ☝️ ☝️  Default Configuration ☝️ ☝️ ☝️ -----')
+        print('\n----- ☝️ ☝️ ☝️  Default Configuration ☝️ ☝️ ☝️ -----\n')
         update_config = bool(input('\n----- 請問是否更新使用者選項 ？ (y / n) -----\n') in 'Yy')
 
     if not update_config:
@@ -33,6 +33,8 @@ def tw_stock_config():
 
     all_year_range = bool(input('\n----- 是否爬取全部資料？ (y / n)-----\n') in 'yY')
 
+    prevent_spamming = bool(input('\n----- 是否開啟略過重複任務的選項 ? (y / n) -----\n') in 'yY')
+
     columns_name = config['table.columns_name'][0] if bool(input(
         '\n----- 是否更改 Table Columns Name ? (y / n) -----\n') in 'nN') else list(input('\n----- 以空格分隔 依序輸入 Table Columns Name -----\n').split(' '))
 
@@ -40,6 +42,7 @@ def tw_stock_config():
         "geo": geo,
         "daily": daily,
         "all_year_range": all_year_range,
+        "prevent_spamming":  prevent_spamming,
         "table": {
             "columns_name": columns_name,
         }

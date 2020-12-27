@@ -7,9 +7,9 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 import pandas as pd
 
-from Resolvers import PathResolver
-from Resolvers import DataResolver
+from Resolvers import *
 from utils import *
+from random import randint
 
 from pprint import pprint
 
@@ -31,11 +31,13 @@ class GoogleTrend:
         self.dr = dr  # date range
         self.env_dir = os.getcwd()
         self.platform = system()
+        self.driver = None
+
         self.temp_path = PathResolver(['temp', self.q], mkdir=True)
         self.data_path_week = PathResolver(['data', 'week'], mkdir=True)
         self.data_path_day = PathResolver(
             ['data', 'day'], mkdir=True) if daily else None
-        self.driver = self._get_driver()
+        self._get_driver()
         self.has_set_query_detail()
         self.to_google_trend_page()
 
@@ -70,9 +72,10 @@ class GoogleTrend:
         )
         driver.set_window_size(1440, 900)
         print(f'\n分析公司代號 {self.q} ···')
-        driver.get('https://pchome.megatime.com.tw/search')
+        driver.delete_cookie('stock_user_uuid')
+        async_init_driver(driver, 'https://pchome.megatime.com.tw/search')
         sleep(rd_ms())
-        return driver
+        self.driver = driver
 
     def to_google_trend_page(self):
         self.driver.get(self.url)
@@ -100,7 +103,7 @@ class GoogleTrend:
                 self.key = key
             print(f'\n開始擷取 {self.key} 資料···\n')
         except:
-            self.key = '...'
+            self.key = 'NA'
             sleep(rd_ms() + 1)
 
     def _driver_file_name(self):
@@ -113,18 +116,34 @@ class GoogleTrend:
 
     def _toPage(self, url):
         self.driver.get(url)
-        sleep(rd_ms())
+        sleep(0.5)
         print(self.driver.current_url)
+        dot(.5)
+        
 
-    def _download(self):
+    def _download(self, failed:int=0):
+        if failed > 0 and failed <= 3: 
+            print('\n重啟任務···')
+        elif failed > 3:
+            return False
+
         headless = not self.dev
         selector = self.download_button_selector
         # download = self.driver.find_element(By.CSS_SELECTOR, selector)
-        download = self.driver.find_element_by_css_selector(selector)
-        sleep(rd_ms())
-        download.click()
-        sleep(rd_ms())
-        self._avoid_rewrite()
+        try:
+            download = self.driver.find_element_by_css_selector (selector)
+            sleep(rd_ms())
+            download.click()
+            sleep(rd_ms())
+            self._avoid_rewrite()
+            print('Done (成功)')
+            return True
+        except:
+            s = randint(5, 10)
+            print(f'Failed (失敗) ··· 休眠約 {s}s 後喚醒')
+            dot(s/3)
+            return self._download(failed=failed+1)
+
 
     def _isData(self):
         selector = self.no_data_error_selector
@@ -133,6 +152,7 @@ class GoogleTrend:
             print(error.text)
             return False
         except:
+            sleep(rd_ms())
             return True
 
     def _avoid_rewrite(self):
@@ -156,17 +176,19 @@ class GoogleTrend:
                 url = f'{self.url}?date={cy}-01-01%20{cy}-12-31&q={self.q}{geo_query}'
                 self._toPage(url)
                 sleep(1)
-                self._download()
-                sleep(rd_ms())
-                cy += 1
+                if self._isData():
+                    if not self._download(): continue
+                
             elif sequence_type == 'cross-year':
                 print(f'\n正在抓取 {self.q} {self.key} {cy}年 跨 {cy+1}年 週資料···')
                 url = f'{self.url}?date={cy}-07-01%20{cy+1}-6-30&q={self.q}{geo_query}'
                 self._toPage(url)
                 sleep(1)
-                self._download()
-                sleep(rd_ms())
-                cy += 1
+                if self._isData():
+                    if not self._download(): continue
+
+            sleep(rd_ms())
+            cy += 1
 
     def _merge_per_week(self, sequence_type: str, sy: int, ey: int):
         file_name = ''
@@ -186,11 +208,13 @@ class GoogleTrend:
         column = []
         index = []
         while cy <= ey:
-            csv = pd.read_csv(
-                filepath_or_buffer=temp_path.push_ret_pop(f'{i}.csv'))
-            data = csv['類別：所有類別'][1:]
-            column += list(data)
-            index += list(data.index)
+            file_name = f'{i}.csv'
+            if temp_path.isfile(file_name): 
+                csv = pd.read_csv(
+                    filepath_or_buffer=temp_path.push_ret_pop(file_name))
+                data = csv['類別：所有類別'][1:]
+                column += list(data)
+                index += list(data.index)
             cy += 1
             i += 1
         df[f'{self.q}'] = column
@@ -221,8 +245,8 @@ class GoogleTrend:
                 sm += 6
                 self._toPage(url)
                 sleep(1)
-                if self._isData():
-                    self._download()
+                if self._isError(): continue
+                if not self._download(): continue
                 sleep(rd_ms())
             cy += 1
             sm = 1
@@ -283,3 +307,9 @@ class GoogleTrend:
         self._merge_per_week(sequence_type='cross-year', sy=start_year, ey=end_year)
         files_cleaner(temp_path.path())
         self.driver.close()
+
+def async_init_driver(driver, url: str):
+    try:
+        driver.get(url)
+    except:
+        raise Exception('\n網路狀況不太好，伺服器回應超時···\n')
