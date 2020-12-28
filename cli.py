@@ -3,80 +3,104 @@ from time import time
 from GoogleTrend import GoogleTrend
 from merge import merge_day, merge_week
 
+class SVI_CLI:
+    def __init__(self, config):
+        self.config = config
+        self.geo = None
+        self.daily = None
+        self.cross_year = None
+        self.all_year_range = None
+        self.columns_name = None
+        self.pspam = None
+        self.year_at_most_default = None
 
-def google_trend_cli(geo: str, daily: str, y_range: list, pspam: bool):
-    geo = '' if geo == 'Global' else geo
-    qs = input('\n----- 趨勢關鍵字(群)： 例如 google、股票代號 -----\n').split()
+        self.y_range = None
 
-    t_start = time()
-    for q in qs:
-        q = q.replace('-', ' ')
+        self._state_init()
 
-        if pspam and already_exist(q) and not_spamming_server(q=q, timeout_default=True):
-            sleep(1)
-            continue
+    def _state_init(self):
+        self.geo = self.config['geo'][0]
+        self.daily = self.config['daily'][0]
+        self.cross_year = self.config['cross_year'][0]
+        self.all_year_range = self.config['all_year_range'][0]
+        self.columns_name = self.config['table.columns_name'][0]
+        self.pspam = self.config['prevent_spamming'][0]
+        self.year_at_most_default = default_at_most(daily=self.daily)
+        self.set_valid_year_range()
+        
 
-        tt_st = time()
-        google_trend = GoogleTrend(
-            q=q, dr=y_range, dev=False, daily=daily, geo=geo)
-        google_trend.main()
-        tt_ed = time()
-        print(f'{q} 耗時約 {int(tt_ed-tt_st)}s')
-    t_end = time()
-    print(f'\n總計耗時約 {int(t_end-t_start)}s')
-    return input('----- 繼續 (y) / 結束 (n) -----\n') in 'yY'
+    def set_valid_year_range(self) -> (list):
+        yr = self.year_at_most_default
+
+        if not self.all_year_range:
+            first = yr[0]
+            last = yr[1]
+            while True:
+                y_start = valid_number(
+                    input('\n----- 請輸入起始年份： (2004 require at least) -----\n'), output_type='int')
+                if is_valid_year(y_r=yr, year=y_start):
+                    break
+                else:
+                    print(f'\n!!! 起始年份必須介於 {first} ~ {last}之間')
+            while True:
+                y_end = valid_number(
+                    input(f'\n請輸入結尾年份： ({last} require at most)\n'),     output_type='int')
+                if is_valid_year(y_r=yr, year=y_end):
+                    break
+                else:
+                    print(f'\n!!! 結尾年份必須介於 {first} ~ {last}')
+
+            self.y_range = [y_start, y_end]
 
 
-def taiwan_stock_cli(
-    geo: str,
-    daily: bool,
-    all_year_range: bool,
-    columns_name: list,
-    pspam: bool,
-    sleep_time: float = 1.0
-):
-    # valid range
-    y_range = [2004, valid_year_at_most(daily=daily, output_type='int')]
+    def save(self):
+        merge_week(sequence_type='none-cross', new_folder='merged', cn=self.columns_name)
+        if self.cross_year:
+            merge_week(sequence_type='cross-year', new_folder='merged', cn=self.columns_name)
+        if self.daily:
+            merge_day(new_folder='merged', table_type='single-column',
+                  sequence_type='none-cross', cn=self.columns_name)
 
-    year_at_most_default: list
 
-    # All data ?
-    if all_year_range:
-        year_at_most_default = default_at_most(daily=daily)
-        y_start = year_at_most_default[0]
-        y_end = year_at_most_default[1]
-    else:
-        while True:
-            y_start = valid_number(
-                input('\n----- 請輸入起始年份： (2004 require at least) -----\n'), output_type='int')
-            if is_valid_year(y_range, y_start):
-                break
-            else:
-                print(f'\n!!! 起始年份必須介於 {y_range[0]} ~ {y_range[1]}之間')
-        while True:
-            y_end = valid_number(
-                input(f'\n請輸入結尾年份： ({y_range[1]} require at most)\n'),     output_type='int')
-            if is_valid_year(y_range, y_end):
-                break
-            else:
-                print(f'\n!!! 結尾年份必須介於 {y_range[0]} ~ {y_range[1]}')
-        year_at_most_default = [y_start, y_end]
+    def google_trend_cli(self):
+        geo = '' if self.geo == 'Global' else self.geo
+        qs = input('\n----- 趨勢關鍵字(群)： 例如 google、股票代號 -----\n').split()
 
-    try:
-        while True:
-            if not google_trend_cli(geo=geo, daily=daily, y_range=year_at_most_default, pspam=pspam):
-                sleep(sleep_time)
-                break
-    except:
-        print('\n中斷爬蟲中')
-        dot(1)
-    merge_week(sequence_type='none-cross', geo=geo,
-               new_folder='merged', cn=columns_name)
-    merge_week(sequence_type='cross-year', geo=geo,
-               new_folder='merged', cn=columns_name)
-    if daily:
-        merge_day(new_folder='merged', table_type='single-column',
-                  sequence_type='none-cross', cn=columns_name)
+        t_start = time()
+        for q in qs:
+            q = q.replace('-', ' ')
 
-    print('\n----- 系統將在 2 秒後自動關閉視窗，或是手動點擊右上角離開視窗 ··· -----')
-    sleep(1)
+            if self.pspam and already_exist(q) and not_spamming_server(q=q, timeout_default=True):
+                sleep(1)
+                continue
+
+            tt_st = time()
+            google_trend = GoogleTrend(
+                q=q,
+                dr=self.y_range,
+                dev=False,
+                daily=self.daily,
+                cross_year=self.cross_year,
+                geo=geo)
+            google_trend.main()
+            tt_ed = time()
+            print(f'{q} 耗時約 {int(tt_ed-tt_st)}s')
+        t_end = time()
+        print(f'\n總計耗時約 {int(t_end-t_start)}s')
+
+        self.save()
+
+        return input('\n----- 繼續 (y) / 結束 (n) -----\n') in 'yY'
+
+    def taiwan_stock_cli(self):
+        try:
+            while True:
+                if not self.google_trend_cli():
+                    break
+        except:
+            print('\n中斷爬蟲中')
+            dot(1)
+
+        self.save()
+        print('\n----- 系統將在 2 秒後自動關閉視窗，或是手動點擊右上角離開視窗 ··· -----')
+        sleep(1)

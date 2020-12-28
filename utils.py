@@ -113,12 +113,6 @@ def toMapOmitValue(datas: list, medians: list) -> (list):
         asvi = 0
         if m == 'NA':
             asvi = "NA"
-        elif d == 0 and m == 0:
-            asvi = 0
-        elif d != 0 and m == 0:
-            asvi = ln(d) - 0
-        elif d == 0 and m != 0:
-            asvi = 0 - ln(m)
         else:
             asvi = ln(d) - ln(m)
         adjust.append(asvi)

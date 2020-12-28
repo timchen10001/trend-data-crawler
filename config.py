@@ -14,12 +14,12 @@ def tw_stock_config():
     if path.isfile(config_path):
         config = pd.read_json(config_path)
         cols = config.columns
-        print('\n\n----- 👇👇👇 Default Configuration 👇👇👇 -----')
+        print('\n\n----- 👇👇👇 爬蟲預設選項 👇👇👇 -----')
         for col in cols:
             setting = config[col][0]
             print(f'\n{col}: {setting}')
-        print('\n----- ☝️ ☝️ ☝️  Default Configuration ☝️ ☝️ ☝️ -----\n')
-        update_config = bool(input('\n----- 請問是否更新使用者選項 ？ (y / n) -----\n') in 'Yy')
+        print('\n----- ☝️ ☝️ ☝️  爬蟲預設選項 ☝️ ☝️ ☝️ -----\n')
+        update_config = bool(input('\n----- 請問是否更新爬蟲預設選項 ？ (y / n) -----\n') in 'Yy')
 
     if not update_config:
         return config
@@ -31,6 +31,8 @@ def tw_stock_config():
 
     daily = bool(input('\n----- 是否需要日資料? (y / n) -----\n') in 'yY')
 
+    cross_year = bool(input('\n----- 是否需要跨年度資料？ (y / n) -----\n') in 'yY')
+
     all_year_range = bool(input('\n----- 是否爬取全部資料？ (y / n)-----\n') in 'yY')
 
     prevent_spamming = bool(input('\n----- 是否開啟略過重複任務的選項 ? (y / n) -----\n') in 'yY')
@@ -41,6 +43,7 @@ def tw_stock_config():
     config_json = pd.json_normalize({
         "geo": geo,
         "daily": daily,
+        "cross_year": cross_year,
         "all_year_range": all_year_range,
         "prevent_spamming":  prevent_spamming,
         "table": {

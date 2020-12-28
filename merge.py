@@ -163,7 +163,6 @@ def merge_day(
 
 def merge_week(
     sequence_type: str,
-    geo: str,
     new_folder: str,
     cn: list,  # columns_name
 ):
@@ -192,3 +191,4 @@ def merge_week(
     write_path = pr.path()
     df.to_csv(write_path)
     print(f'\n({"非跨年" if sequence_type == "none-cross" else "跨年"}) 週資料 合併完成 !')
+
