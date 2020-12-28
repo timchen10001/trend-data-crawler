@@ -12,6 +12,7 @@ def merge_main_df(
     folder: str,
     new_folder: str,
     cn: list,
+    sequence_type: str = 'none-cross',
     data_type: str = 'day'
 ):
     data = []
@@ -33,7 +34,7 @@ def merge_main_df(
         adjust_col = list(array(col)+1) if data_type == 'week' else None
 
         # treat date
-        row = csv[key_map[0]]
+        row = list(csv[key_map[0]])
 
         size = len(row)
         size_range = range(size)
@@ -49,19 +50,37 @@ def merge_main_df(
         # treat median
         if adjust_col:
             med = []
-            year = None
-            c = 0
-            for i in size_range:
-                y = row[i].split('-')[0]
-                if y != year:
-                    year = y
-                    c = 0
-                if c < 8:
-                    med.append('NA')
-                else:
-                    median_ = median(adjust_col[i-8: i])
+            if sequence_type == 'none-cross':
+                year = None
+                c = 0
+                for i in size_range:
+                    y = row[i].split('-')[0]
+                    if y != year:
+                        year = y
+                        c = 0
+                    if c < 8:
+                        med.append('NA')
+                    else:
+                        median_ = median(adjust_col[i-8: i])
+                        med.append(median_)
+                    c += 1
+            elif sequence_type == 'cross-year':
+                c = 0
+                month = '06'
+                reset = False
+                for i in size_range:
+                    m = row[i].split('-')[1]
+
+                    if m == '07' and month == '06':
+                        c = 0
+                    month = m
+
+                    if c < 8:
+                        median_ = 'NA'
+                    else:
+                        median_ = median(adjust_col[i-8: i])
                     med.append(median_)
-                c += 1
+                    c += 1
 
         data.extend(col)
         date.extend(row)
@@ -108,7 +127,8 @@ def merge_day(
             file_path_list=file_path_list,
             folder=folder,
             new_folder=new_folder,
-            cn=cn
+            cn=cn,
+            data_type='day'
         )
         pr.push_back(new_folder)
         pr.mkdir()
@@ -191,7 +211,7 @@ def merge_week(
     pr.pop_back()
 
     df = merge_main_df(file_path_list=file_path_list, folder=folder,
-                       new_folder=new_folder, cn=cn, data_type='week')
+                       new_folder=new_folder, cn=cn, sequence_type=sequence_type, data_type='week')
     pr.push_back(new_folder)
     pr.mkdir()
     pr.push_back(f'{folder}.csv' if sequence_type ==

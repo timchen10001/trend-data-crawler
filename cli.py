@@ -27,7 +27,7 @@ class SVI_CLI:
         self.pspam = self.config['prevent_spamming'][0]
         self.year_at_most_default = default_at_most(daily=self.daily)
         self.set_valid_year_range()
-        
+
 
     def set_valid_year_range(self) -> (list):
         yr = self.year_at_most_default
@@ -100,7 +100,7 @@ class SVI_CLI:
         except:
             print('\n中斷爬蟲中')
             dot(1)
+            self.save()
 
-        self.save()
         print('\n----- 系統將在 2 秒後自動關閉視窗，或是手動點擊右上角離開視窗 ··· -----')
         sleep(1)
