@@ -14,11 +14,11 @@ def tw_stock_config():
     if path.isfile(config_path):
         config = pd.read_json(config_path)
         cols = config.columns
-        print('\n\n----- 👇👇👇 爬蟲預設選項 👇👇👇 -----')
+        print('\n\n----- 爬蟲預設選項 -----')
         for col in cols:
             setting = config[col][0]
             print(f'\n{col}: {setting}')
-        print('\n----- ☝️ ☝️ ☝️  爬蟲預設選項 ☝️ ☝️ ☝️ -----\n')
+        print('\n----- 爬蟲預設選項 -----\n')
         update_config = bool(input('\n----- 請問是否更新爬蟲預設選項 ？ (y / n) -----\n') in 'Yy')
 
     if not update_config:

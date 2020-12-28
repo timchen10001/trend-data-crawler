@@ -25,8 +25,8 @@ def merge_main_df(
         csv = pd.read_csv(f_p)
 
         key_map = list(csv.columns)
-        key = key_map[1]
         name = key_map[0]
+        key = key_map[1]
 
         # treat data
         col = tidy_array(data=csv[key])
@@ -36,24 +36,32 @@ def merge_main_df(
         row = csv[key_map[0]]
 
         size = len(row)
+        size_range = range(size)
 
         if size == 0:
             os.remove(f_p)
             continue
 
         # treat keys
-        keys = [key for _ in range(size)]
-        keys_tw = [name for _ in range(size)]
+        keys = [key for _ in size_range ]
+        keys_tw = [name for _ in size_range]
 
         # treat median
         if adjust_col:
             med = []
-            for i in range(len(col)):
-                if i < 8:
+            year = None
+            c = 0
+            for i in size_range:
+                y = row[i].split('-')[0]
+                if y != year:
+                    year = y
+                    c = 0
+                if c < 8:
                     med.append('NA')
                 else:
-                    medi = median(adjust_col[i-8: i])
-                    med.append(medi)
+                    median_ = median(adjust_col[i-8: i])
+                    med.append(median_)
+                c += 1
 
         data.extend(col)
         date.extend(row)
@@ -72,7 +80,7 @@ def merge_main_df(
     if adjust_data:
         df[cn[4]] = adjust_data
         df[cn[5]] = median_list
-        df[cn[6]] = toMapOmitValue(datas=data, medians=median_list)
+        df[cn[6]] = toMapOmitValue(datas=adjust_data, medians=median_list)
     return df.set_index(cn[0])
 
 
