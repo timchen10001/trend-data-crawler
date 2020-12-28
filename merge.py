@@ -73,13 +73,14 @@ def merge_main_df(
 
                     if m == '07' and month == '06':
                         c = 0
-                    month = m
 
                     if c < 8:
                         median_ = 'NA'
                     else:
                         median_ = median(adjust_col[i-8: i])
                     med.append(median_)
+                    
+                    month = m
                     c += 1
 
         data.extend(col)
