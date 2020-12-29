@@ -4,14 +4,12 @@ from platform import system
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
+# from selenium.webdriver.common.by import By
 import pandas as pd
 
 from Resolvers import *
 from utils import *
 from random import randint
-
-from pprint import pprint
 
 class GoogleTrend:
     def __init__(

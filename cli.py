@@ -102,11 +102,12 @@ class SVI_CLI:
 
         self.save()
 
-        return input('\n----- 繼續 (y) / 結束 (n) -----\n') in 'yY'
+        return bool(input('\n----- 繼續 (y) / 結束 (n) -----\n') in 'yY')
 
     def taiwan_stock_cli(self):
         try:
-            while not self.google_trend_cli(): break
+            while True:
+                if not self.google_trend_cli(): break
         except:
             print('\n中斷爬蟲中')
             dot(1)
