@@ -65,10 +65,10 @@ class PathResolver:
                 p.append(file_path)
         return p
 
-    def isfile(self, file_path: str)->bool:
+    def isfile(self, file_path: str)->(bool):
         fp = self.push_ret_pop(file_path)
-        if os.path.isfile(fp): return True
-        return False
+        return os.path.isfile(fp)
+
 
 # data cleaner
 class DataResolver:

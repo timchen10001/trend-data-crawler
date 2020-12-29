@@ -94,9 +94,7 @@ class SVI_CLI:
 
     def taiwan_stock_cli(self):
         try:
-            while True:
-                if not self.google_trend_cli():
-                    break
+            while not self.google_trend_cli(): break
         except:
             print('\n中斷爬蟲中')
             dot(1)

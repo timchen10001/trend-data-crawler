@@ -44,44 +44,18 @@ def merge_main_df(
             continue
 
         # treat keys
-        keys = [key for _ in size_range ]
+        keys = [key for _ in size_range]
         keys_tw = [name for _ in size_range]
 
         # treat median
+        med = None
         if adjust_col:
-            med = []
-            if sequence_type == 'none-cross':
-                year = None
-                c = 0
-                for i in size_range:
-                    y = row[i].split('-')[0]
-                    if y != year:
-                        year = y
-                        c = 0
-                    if c < 8:
-                        med.append('NA')
-                    else:
-                        median_ = median(adjust_col[i-8: i])
-                        med.append(median_)
-                    c += 1
-            elif sequence_type == 'cross-year':
-                c = 0
-                month = '06'
-                reset = False
-                for i in size_range:
-                    m = row[i].split('-')[1]
-
-                    if m == '07' and month == '06':
-                        c = 0
-
-                    if c < 8:
-                        median_ = 'NA'
-                    else:
-                        median_ = median(adjust_col[i-8: i])
-                    med.append(median_)
-                    
-                    month = m
-                    c += 1
+            med = fill_ommit_with_na(
+                size_range=size_range,
+                row=row,
+                adjust_col=adjust_col,
+                sequence_type=sequence_type
+            )
 
         data.extend(col)
         date.extend(row)
@@ -90,7 +64,6 @@ def merge_main_df(
         if adjust_col:
             adjust_data.extend(adjust_col)
             median_list.extend(med)
-
 
     df = pd.DataFrame()
     df[cn[0]] = index
@@ -102,6 +75,45 @@ def merge_main_df(
         df[cn[5]] = median_list
         df[cn[6]] = toMapOmitValue(datas=adjust_data, medians=median_list)
     return df.set_index(cn[0])
+
+
+def fill_ommit_with_na(
+    size_range:list,
+    row:list,
+    adjust_col: list,
+    sequence_type: str
+):
+    med = []
+    if sequence_type == 'none-cross':
+         year = None
+         c = 0
+         for i in size_range:
+             y = row[i].split('-')[0]
+             if y != year:
+                 year = y
+                 c = 0
+             if c < 8:
+                 med.append('NA')
+             else:
+                 median_ = median(adjust_col[i-8: i])
+                 med.append(median_)
+             c += 1
+    elif sequence_type == 'cross-year':
+        c = 0
+        month = '06'
+        reset = False
+        for i in size_range:
+            m = row[i].split('-')[1]
+            if m == '07' and month == '06':
+                c = 0
+            if c < 8:
+                median_ = 'NA'
+            else:
+                median_ = median(adjust_col[i-8: i])
+            med.append(median_)
+            month = m
+            c += 1
+    return med
 
 
 def merge_day(
@@ -220,4 +232,3 @@ def merge_week(
     write_path = pr.path()
     df.to_csv(write_path)
     print(f'\n({"非跨年" if sequence_type == "none-cross" else "跨年"}) 週資料 合併完成 !')
-

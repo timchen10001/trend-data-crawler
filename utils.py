@@ -70,7 +70,7 @@ def default_at_most(daily: bool):
 
 
 # nature log
-def ln(num):
+def ln(num: float) -> (float):
     return log(num)
 
 # file exist check
@@ -111,8 +111,14 @@ def toMapOmitValue(datas: list, medians: list) -> (list):
     adjust = []
     for d, m in zip(datas, medians):
         asvi = 0
-        if m == 'NA':
+        if d == 'NA' or m == 'NA':
             asvi = "NA"
+        elif d == 0 and m == 0:
+            asvi = 0
+        elif d == 0 and m != 0:
+            asvi = 0 - ln(m)
+        elif d != 0 and m == 0:
+            asvi = ln(d) - 0
         else:
             asvi = ln(d) - ln(m)
         adjust.append(asvi)
