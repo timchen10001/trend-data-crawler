@@ -38,7 +38,7 @@ class PathResolver:
     def mkdir(self, nodes:list=[]):
         if len(nodes) != 0:
             self.push_back(nodes)
-        if len(self._nodes) == 0: 
+        if len(self._nodes) == 0:
             return
 
         ps = self._ps
@@ -72,35 +72,49 @@ class PathResolver:
 
 # data cleaner
 class DataResolver:
-    def __init__(self, q: str):
+    def __init__(self, q:str, data_type:str='day'):
         self.ps = path_separate()
         self.q = q
+        self.data_type = data_type
         self.temp_path = PathResolver(['temp', q], mkdir=True)
 
-    def tidy_map(self) -> (dict):
-        path_list = self._temp_file_mapper()
+    def day_tidy_map(self) -> (dict):
+        path_list = self._temp_file_path_mapper()
         if len(path_list) == 0:
             raise Exception(f'{self.q} 搜尋資料不足')
 
         _tidy = {}
         for p in path_list:
             csv = read_csv(p)
-
             data = csv['類別：所有類別'][1:]  # not tidy
             date = list(data.index)  # not tidy
-
-            tidy_data = self._merge_with_conflict(data=data, date=date)
-
+            tidy_data = self.merge_day_with_conflict(data=data, date=date)
             # int
             year = date[1].split('-')[0]
-
-            if year in _tidy.keys(): 
+            if year in _tidy.keys():
                 _tidy[year] += tidy_data
-            else: 
+            else:
                 _tidy[year] = tidy_data
         return _tidy
 
-    def _temp_file_mapper(self) -> (list):
+    def month_map(self) -> (dict):
+        path_list = self._temp_file_path_mapper()
+        if len(path_list) == 0:
+            raise Exception(f'{self.q} 搜尋資料不足')
+        month_date = []
+        month_data = []
+        for p in path_list:
+            csv = read_csv(p)
+
+            data = list(csv['類別：所有類別'][1:])
+            date = list(csv.index[1:])
+
+            month_data.extend(data)
+            month_date.extend(date)
+
+        return { "date": month_date, "data": month_data }
+
+    def _temp_file_path_mapper(self) -> (list):
         temp_path = self.temp_path
         i = 1
         l = []
@@ -109,7 +123,7 @@ class DataResolver:
             i += 1
         return l
 
-    def _merge_with_conflict(self, data: list, date: list) -> (list):
+    def merge_day_with_conflict(self, data: list, date: list) -> (list):
         tidy = []
         i = 0
         for e, val in zip(date, data):
@@ -121,3 +135,10 @@ class DataResolver:
                 tidy.append(['02', '29', 'NA'])
             i += 1
         return tidy
+
+    def get_data(self):
+        if self.data_type == 'day':
+            return self.day_tidy_map()
+        elif self.data_type == 'month':
+            return self.month_map()
+        return None

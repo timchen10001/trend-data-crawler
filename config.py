@@ -19,7 +19,7 @@ def tw_stock_config():
             setting = config[col][0]
             print(f'\n{col}: {setting}')
         print('\n----- 爬蟲預設選項 -----\n')
-        update_config = bool(input('\n----- 請問是否更新爬蟲預設選項 ？ (y / n) -----\n') in 'Yy')
+        update_config = bool(input('\n----- 請問是否更新爬蟲預設選項 ？ (y / n) -----\n') in 'yY')
 
     if not update_config:
         return config
@@ -30,6 +30,8 @@ def tw_stock_config():
         input('\n----- 區域英文縮寫 (全球: Global, 其他地區自行估狗) -----\n'))
 
     daily = bool(input('\n----- 是否需要日資料? (y / n) -----\n') in 'yY')
+
+    month = bool(input('\n----- 是否需要月資料? (y / n)\n') in 'yY')
 
     cross_year = bool(input('\n----- 是否需要跨年度資料？ (y / n) -----\n') in 'yY')
 
@@ -43,6 +45,7 @@ def tw_stock_config():
     config_json = pd.json_normalize({
         "geo": geo,
         "daily": daily,
+        "month": month,
         "cross_year": cross_year,
         "all_year_range": all_year_range,
         "prevent_spamming":  prevent_spamming,

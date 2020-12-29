@@ -232,3 +232,29 @@ def merge_week(
     write_path = pr.path()
     df.to_csv(write_path)
     print(f'\n({"非跨年" if sequence_type == "none-cross" else "跨年"}) 週資料 合併完成 !')
+
+def merge_month(
+    new_folder: str,
+    cn: list,  # columns_name
+):
+    folder = 'month'
+    pr = PathResolver(['data', folder], mkdir=True)
+    src_path = pr.path()
+    pr.pop_back(times=1)
+
+    files_name_list = []
+    for file in os.listdir(path=src_path):
+        files_name_list.append(file)
+
+    pr.push_back(node=folder)
+    file_path_list = pr.push_ret_pop(nodes=files_name_list)
+    pr.pop_back()
+
+    df = merge_main_df(file_path_list=file_path_list, folder=folder,
+                       new_folder=new_folder, cn=cn, data_type='month')
+    pr.push_back(new_folder)
+    pr.mkdir()
+    pr.push_back(f'{folder}.csv')
+    write_path = pr.path()
+    df.to_csv(write_path)
+    print(f'\n月資料 合併完成 !')
