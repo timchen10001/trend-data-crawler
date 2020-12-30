@@ -206,6 +206,8 @@ class Stock(GoogleTrend):
 
 
     def main(self, table_type:str='single-column'):
+        temp_path = self.temp_path.path()
+        
         self.data_path_week = PathResolver(['data', 'week'], mkdir=True)
         self.data_path_day = PathResolver(['data', 'day'], mkdir=True)
         self.data_path_month = PathResolver(['data', 'month'], mkdir=True)
@@ -214,28 +216,28 @@ class Stock(GoogleTrend):
 
         self.has_set_ticker_detail()
         self.to_google_trend_page()
-        files_cleaner(path=self.temp_path.path())
+        files_cleaner(path=temp_path)
 
         if self.month:
             self.scrapping_per_month()
             self.merge_per_month()
-            files_cleaner(path=self.temp_path.path())
+            files_cleaner(path=temp_path)
 
         if self.day:
             self.scrapping_per_day()
             self.merge_per_day()
-            files_cleaner(path=self.temp_path.path())
+            files_cleaner(path=temp_path)
 
         if self.sequence_type == 'cross-year':
             self.scrapping_per_week()
             self.merge_per_week()
-            files_cleaner(path=self.temp_path.path())
+            files_cleaner(path=temp_path)
             self.sequence_type = 'none-cross'
 
         if self.week:
             self.scrapping_per_week()
             self.merge_per_week()
-            files_cleaner(path=self.temp_path.path())
+            files_cleaner(path=temp_path)
 
 
         self.driver.close()
