@@ -231,7 +231,7 @@ def merge_week(
                  'none-cross' else f'{folder} (cross-year).csv')
     write_path = pr.path()
     df.to_csv(write_path)
-    print(f'\n({"非跨年" if sequence_type == "none-cross" else "跨年"}) 週資料 合併完成 !')
+    print(f'\n{"" if sequence_type == "none-cross" else "(跨年)"}週資料 合併完成 !')
 
 def merge_month(
     new_folder: str,

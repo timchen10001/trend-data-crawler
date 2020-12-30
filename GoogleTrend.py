@@ -16,7 +16,8 @@ class GoogleTrend:
         self,
         q: str,
         dr: list,
-        daily: bool,
+        day: bool,
+        week: bool,
         month: bool,
         cross_year: bool,
         dev: bool = False,
@@ -34,7 +35,8 @@ class GoogleTrend:
         self.ps = path_separate()  # path_separate
         self.q = q  # query to search
         self.key = None
-        self.daily = daily
+        self.day = day
+        self.week = week
         self.month = month
         self.cross_year = cross_year
         self.sy = int(dr[0])

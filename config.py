@@ -19,7 +19,7 @@ def tw_stock_config():
             setting = config[col][0]
             print(f'\n{col}: {setting}')
         print('\n----- 爬蟲預設選項 -----\n')
-        update_config = bool(input('\n----- 請問是否更新爬蟲預設選項 ？ (y / n) -----\n') in 'yY')
+        update_config = bool(input('\n----- 請問是否更新 爬蟲預設選項 ? (y / n) -----\n') in 'yY')
 
     if not update_config:
         return config
@@ -29,22 +29,26 @@ def tw_stock_config():
     ) in 'yY' else str(
         input('\n----- 區域英文縮寫 (全球: Global, 其他地區自行估狗) -----\n'))
 
-    daily = bool(input('\n----- 是否需要日資料? (y / n) -----\n') in 'yY')
+    day = bool(input('\n----- 是否需要 日資料 ? (y / n) -----\n') in 'yY')
 
-    month = bool(input('\n----- 是否需要月資料? (y / n)\n') in 'yY')
+    week = bool(input('\n----- 是否需要 週資料 ? (y / n) -----\n') in 'yY')
 
-    cross_year = bool(input('\n----- 是否需要跨年度資料？ (y / n) -----\n') in 'yY')
+    cross_year = bool(input('\n----- 是否需要 跨年(週) 資料？ (y / n) -----\n') in 'yY')
 
-    all_year_range = bool(input('\n----- 是否爬取全部資料？ (y / n)-----\n') in 'yY')
 
-    prevent_spamming = bool(input('\n----- 是否開啟略過重複任務的選項 ? (y / n) -----\n') in 'yY')
+    month = bool(input('\n----- 是否需要 月資料 ? (y / n)\n') in 'yY')
+
+    all_year_range = bool(input('\n----- 是否爬取 全部資料 ? (y / n)-----\n') in 'yY')
+
+    prevent_spamming = bool(input('\n----- 是否開啟 *忽略重複任務* 選項 ? (y / n) -----\n') in 'yY')
 
     columns_name = config['table.columns_name'][0] if bool(input(
-        '\n----- 是否更改 Table Columns Name ? (y / n) -----\n') in 'nN') else list(input('\n----- 以空格分隔 依序輸入 Table Columns Name -----\n').split(' '))
+        '\n----- 是否自訂 Table Columns Name ? (y / n) -----\n') in 'nN') else list(input('\n----- 以空格分隔 依序輸入 Table Columns Name -----\n').split(' '))
 
     config_json = pd.json_normalize({
         "geo": geo,
-        "daily": daily,
+        "day": day,
+        "week": week,
         "month": month,
         "cross_year": cross_year,
         "all_year_range": all_year_range,

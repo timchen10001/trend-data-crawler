@@ -74,14 +74,17 @@ def ln(num: float) -> (float):
     return log(num)
 
 # file exist check
-def already_exist(q: str):
-    data_path = [
-        PathResolver(['data', 'day'], mkdir=True).path(),
-        PathResolver(['data', 'week'], mkdir=True).path()
-    ]
-    for path in data_path:
-        for file_name in os.listdir(path):
-            if q in file_name:
+def already_exist(q:str, data_type:str):
+    is_cross = data_type == 'cross_year'
+
+    data_type = 'week' if is_cross else data_type
+    data_path = PathResolver(['data', data_type], mkdir=True).path()
+    for file_name in os.listdir(data_path):
+        if is_cross:
+            if f'{q} (cross-year).csv' == file_name:
+                return True
+        else:
+            if f'{q}.csv' == file_name:
                 return True
     return False
 
@@ -126,12 +129,8 @@ def toMapOmitValue(datas: list, medians: list) -> (list):
 
 def not_spamming_server(q: str, timeout_default: bool, timeout: int=10) -> (bool):
     try:
-        print(f'\n\n----- 預計 {timeout}s 自動結束對話··· -----')
-        dot(.5)
-        print(f'\n----- 防止伺服器洗頻預設：{"y" if timeout_default else "n"} -----')
-        dot(.5)
-        print(f'\n-----  {q} 已存在，略過該次擷取 ? 是(y) / 否(n) -----')
-        something = bool(inputimeout(prompt='', timeout=timeout) in 'yY')
+        prompt = f'\n----- {q} 已存在，繼續擷取 ? 爬(y) / 不爬(n) -----\n'
+        something = bool(not inputimeout(prompt=prompt, timeout=timeout) in 'yY')
     except TimeoutOccurred:
         something = timeout_default
         print(f'{"y" if something else "n"}')
@@ -146,3 +145,5 @@ def dot(s: float):
         d += '·'
         sleep(s)
     print(' ', end='')
+
+

@@ -6,71 +6,82 @@ from merge import merge_day, merge_month, merge_week
 class SVI_CLI:
     def __init__(self, config):
         self.config = config
-        self.geo = None
-        self.daily = None
-        self.month = None
-        self.cross_year = None
-        self.all_year_range = None
-        self.columns_name = None
-        self.pspam = None
-        self.year_at_most_default = None
-
-        self.y_range = None
-
         self._state_init()
 
     def _state_init(self):
         self.geo = self.config['geo'][0]
-        self.daily = self.config['daily'][0]
+        self.week = self.config['week'][0]
+        self.day = self.config['day'][0]
         self.month = self.config['month'][0]
         self.cross_year = self.config['cross_year'][0]
         self.all_year_range = self.config['all_year_range'][0]
         self.columns_name = self.config['table.columns_name'][0]
         self.pspam = self.config['prevent_spamming'][0]
-        self.year_at_most_default = default_at_most(daily=self.daily)
+
+        self.year_at_most_default = default_at_most(daily=self.day)
         self.set_valid_year_range()
+
+
 
 
     def set_valid_year_range(self) -> (list):
         yr = self.year_at_most_default
-
+        self.y_range = self.year_at_most_default
         if not self.all_year_range:
             first = yr[0]
             last = yr[1]
+            y_start = 0
+            y_end = 0
             while True:
-                while True:
-                    y_start = valid_number(
-                        input('\n----- 請輸入起始年份： (2004 require at least) -----\n'), output_type='int')
-                    if is_valid_year(y_r=yr, year=y_start):
-                        break
-                    else:
-                        print(f'\n!!! 起始年份必須介於 {first} ~ {last}之間')
-                while True:
-                    y_end = valid_number(
-                        input(f'\n請輸入結尾年份： ({last} require at most)\n'),     output_type='int')
-                    if is_valid_year(y_r=yr, year=y_end):
-                        break
-                    else:
-                        print(f'\n!!! 結尾年份必須介於 {first} ~ {last}')
-                if (y_end - y_start) < 5:
-                    print('\n如果需要月資料，年份區間 至少需要選擇 5 年 !!!')
-                    if input('\n是否取消擷取月資料 ? ( 取消月資料 y / 重新輸入年分 n )\n') in 'yY':
-                        self.month = False
-                        break;
-                else:
+                y_start = valid_number(
+                    input('\n----- 請輸入起始年份： (2004 require at least) -----\n'), output_type='int')
+                if is_valid_year(y_r=yr, year=y_start):
                     break
+                else:
+                    print(f'\n!!! 起始年份必須介於 {first} ~ {last}之間')
+            while True:
+                y_end = valid_number(
+                    input(f'\n請輸入結尾年份： ({last} require at most)\n'),     output_type='int')
+                if is_valid_year(y_r=yr, year=y_end):
+                    break
+                else:
+                    print(f'\n!!! 結尾年份必須介於 {first} ~ {last}')
             self.y_range = [y_start, y_end]
 
 
     def save(self):
-        merge_week(sequence_type='none-cross', new_folder='merged', cn=self.columns_name)
+        if self.week:
+            merge_week(sequence_type='none-cross', new_folder='merged', cn=self.columns_name)
         if self.cross_year:
             merge_week(sequence_type='cross-year', new_folder='merged', cn=self.columns_name)
-        if self.daily:
-            merge_day(new_folder='merged', table_type='single-column',
-                  sequence_type='none-cross', cn=self.columns_name)
+        if self.day:
+            merge_day(new_folder='merged', table_type='single-column', sequence_type='none-cross', cn=self.columns_name)
         if self.month:
             merge_month(new_folder='merged', cn=self.columns_name)
+
+    def check_duplication(self, q:str):
+        dt_map = {}
+
+        if self.day: dt_map['day'] = "日"
+        if self.week: dt_map['week'] = "週"
+        if self.cross_year: dt_map['cross_year'] = "跨年(週)"
+        if self.month: dt_map['month'] = "月"
+
+        bool_dt_map = {}
+        for key in dt_map.keys():
+            d = True
+            value = dt_map[key]
+            if already_exist(q=q, data_type=key):
+                qq = f'{q} {value}資料'
+                if not_spamming_server(q=qq, timeout_default=True):
+                    d = False
+            bool_dt_map[f'{key}'] = d
+
+        if self.day: self.day = bool_dt_map['day']
+        if self.week: self.week = bool_dt_map['week']
+        if self.cross_year: self.cross_year = bool_dt_map['cross_year']
+        if self.month: self.month = bool_dt_map['month']
+
 
 
     def google_trend_cli(self):
@@ -81,16 +92,16 @@ class SVI_CLI:
         for q in qs:
             q = q.replace('-', ' ')
 
-            if self.pspam and already_exist(q) and not_spamming_server(q=q, timeout_default=True):
-                sleep(1)
-                continue
+            if self.pspam:
+                self.check_duplication(q=q)
 
             tt_st = time()
             stock_google_trend = Stock(
                 q=q,
                 dr=self.y_range,
                 dev=False,
-                daily=self.daily,
+                day=self.day,
+                week=self.week,
                 month=self.month,
                 cross_year=self.cross_year,
                 geo=geo)
@@ -103,6 +114,7 @@ class SVI_CLI:
         self.save()
 
         return bool(input('\n----- 繼續 (y) / 結束 (n) -----\n') in 'yY')
+
 
     def taiwan_stock_cli(self):
         try:

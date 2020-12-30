@@ -13,7 +13,7 @@ def main():
     dot(.5)
 
     config = tw_stock_config()
-    
+
     svi = SVI_CLI(config=config)
     svi.taiwan_stock_cli()
 

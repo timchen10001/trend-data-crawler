@@ -1,1 +1,20 @@
-{"geo":{"0":"TW"},"daily":{"0":true},"month":{"0":true},"cross_year":{"0":true},"all_year_range":{"0":false},"prevent_spamming":{"0":true},"table.columns_name":{"0":["ticker","company","date","Raw_SVI","Adj_raw_SVI","median","Adjust_SVI"]}}
+{
+  "geo": { "0": "TW" },
+  "day": { "0": true },
+  "week": {"0": true},
+  "month": { "0": true },
+  "cross_year": { "0": true },
+  "all_year_range": { "0": false },
+  "prevent_spamming": { "0": true },
+  "table.columns_name": {
+    "0": [
+      "ticker",
+      "company",
+      "date",
+      "Raw_SVI",
+      "Adj_raw_SVI",
+      "median",
+      "Adjust_SVI"
+    ]
+  }
+}

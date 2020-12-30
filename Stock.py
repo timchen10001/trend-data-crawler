@@ -1,9 +1,10 @@
 from GoogleTrend import GoogleTrend
-from utils import files_cleaner, iTs, rd_ms
+from utils import default_at_most, files_cleaner, iTs, rd_ms
 from time import sleep
 from Resolvers import DataResolver, PathResolver
 from pandas.core.frame import DataFrame
 from pandas.io.parsers import read_csv
+from datetime import datetime
 
 class Stock(GoogleTrend):
     def async_init_driver(self, url: str):
@@ -147,18 +148,18 @@ class Stock(GoogleTrend):
             return df.set_index(f'{self.key}')
 
     def scrapping_per_month(self):
-        sy = self.sy
-        ey = self.ey
+        start_date = '2004-01-01'
+        current_date = str(datetime.now()).split()[0]
+        current_year = current_date.split('-')[0]
+
         geo_query = f'&geo={self.geo}'
-        cy = sy
-        while cy < ey:
-            print(f'\n正在抓取 {self.q} {self.key} {cy}年 跨 {cy+5}年 月資料···')
-            url = f'{self.url}?date={cy}-01-01%20{cy+5}-12-31&q={self.q}{geo_query}'
-            self._toPage(url)
-            sleep(1)
-            if self._isData():
-                if not self._download(): continue
-            cy += 5
+
+        print(f'\n正在抓取 {self.q} {self.key} {2004}年 跨 {current_year}年 月資料···')
+        url = f'{self.url}?date={start_date}%20{current_date}&q={self.q}{geo_query}'
+        self._toPage(url)
+        sleep(1)
+        if self._isData():
+            self._download()
 
     def merge_per_month(self):
         print(f'\n正在合併月資料 ···')
@@ -220,7 +221,7 @@ class Stock(GoogleTrend):
             self.merge_per_month()
             files_cleaner(path=self.temp_path.path())
 
-        if self.daily:
+        if self.day:
             self.scrapping_per_day()
             self.merge_per_day()
             files_cleaner(path=self.temp_path.path())
@@ -231,8 +232,10 @@ class Stock(GoogleTrend):
             files_cleaner(path=self.temp_path.path())
             self.sequence_type = 'none-cross'
 
-        self.scrapping_per_week()
-        self.merge_per_week()
-        files_cleaner(path=self.temp_path.path())
+        if self.week:
+            self.scrapping_per_week()
+            self.merge_per_week()
+            files_cleaner(path=self.temp_path.path())
+
 
         self.driver.close()
