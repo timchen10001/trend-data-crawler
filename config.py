@@ -45,6 +45,14 @@ def tw_stock_config():
     columns_name = config['table.columns_name'][0] if bool(input(
         '\n----- 是否自訂 Table Columns Name ? (y / n) -----\n') in 'nN') else list(input('\n----- 以空格分隔 依序輸入 Table Columns Name -----\n').split(' '))
 
+    mr_w_default = config['median_range.week'][0]
+    mr_m_default = config['median_range.month'][0]
+
+    mr_w = mr_w_default if bool(input(
+        f'\n----- 是否自訂 week 週資料 中位數取值全距 ? 預設:{mr_w_default}個時間單位  (y / n) -----\n') in 'nN') else int(input('\n----- 請輸入 week 週資料中位數取值全距 -----\n'))
+    mr_m = mr_m_default if bool(input(
+        f'\n----- 是否自訂 month 月資料 中位數取值全距 ? 預設:{mr_m_default}個時間單位  (y / n) -----\n') in 'nN') else int(input('\n----- 請輸入 month 月資料中位數取值全距 -----\n'))
+
     config_json = pd.json_normalize({
         "geo": geo,
         "day": day,
@@ -55,6 +63,10 @@ def tw_stock_config():
         "prevent_spamming":  prevent_spamming,
         "table": {
             "columns_name": columns_name,
+        },
+        "median_range": {
+            "week": mr_w,
+            "month": mr_m
         }
     })
     config_json.to_json(config_path)

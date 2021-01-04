@@ -12,8 +12,9 @@ def merge_main_df(
     folder: str,
     new_folder: str,
     cn: list,
+    mr:int,
     sequence_type: str = 'none-cross',
-    data_type: str = 'day'
+    data_type: str = 'day',
 ):
     data = []
     adjust_data = []
@@ -31,7 +32,9 @@ def merge_main_df(
 
         # treat data
         col = tidy_array(data=csv[key])
-        adjust_col = list(array(col)+1) if data_type == 'week' else None
+
+        with_adj_col = data_type == 'week' or data_type == 'month'
+        adjust_col = list(array(col)+1) if with_adj_col else None
 
         # treat date
         row = list(csv[key_map[0]])
@@ -54,7 +57,8 @@ def merge_main_df(
                 size_range=size_range,
                 row=row,
                 adjust_col=adjust_col,
-                sequence_type=sequence_type
+                sequence_type=sequence_type,
+                mr=mr
             )
 
         data.extend(col)
@@ -81,7 +85,8 @@ def fill_ommit_with_na(
     size_range:list,
     row:list,
     adjust_col: list,
-    sequence_type: str
+    sequence_type: str,
+    mr:int
 ):
     med = []
     if sequence_type == 'none-cross':
@@ -92,10 +97,10 @@ def fill_ommit_with_na(
              if y != year:
                  year = y
                  c = 0
-             if c < 8:
+             if c < mr:
                  med.append('NA')
              else:
-                 median_ = median(adjust_col[i-8: i])
+                 median_ = median(adjust_col[i-mr: i])
                  med.append(median_)
              c += 1
     elif sequence_type == 'cross-year':
@@ -106,12 +111,21 @@ def fill_ommit_with_na(
             m = row[i].split('-')[1]
             if m == '07' and month == '06':
                 c = 0
-            if c < 8:
+            if c < mr:
                 median_ = 'NA'
             else:
-                median_ = median(adjust_col[i-8: i])
+                median_ = median(adjust_col[i-mr: i])
             med.append(median_)
             month = m
+            c += 1
+    elif sequence_type == 'month':
+        c = 0
+        for i in size_range:
+            if c < mr:
+                med.append('NA')
+            else:
+                median_ = median(adjust_col[i-mr: i])
+                med.append(median_)
             c += 1
     return med
 
@@ -120,7 +134,7 @@ def merge_day(
     new_folder: str,
     sequence_type: str,
     table_type: str,
-    cn: list
+    cn: list,
 ):
     folder = 'day'
     cur_year = datetime.now().year
@@ -141,14 +155,15 @@ def merge_day(
             folder=folder,
             new_folder=new_folder,
             cn=cn,
-            data_type='day'
+            data_type='day',
+            mr=8
         )
         pr.push_back(new_folder)
         pr.mkdir()
         pr.push_back(f'{folder}.csv')
         write_path = pr.path()
         df = df.fillna('NA')
-        df.to_csv(write_path)
+        df.to_csv(write_path, encoding='utf-8-sig')
         print(f'\n日資料 合併完成 !')
         return
 
@@ -198,7 +213,7 @@ def merge_day(
     pr.mkdir()
     pr.push_back(f'{folder}.csv')
     write_path = pr.path()
-    df.to_csv(write_path)
+    df.to_csv(write_path, encoding='utf-8-sig')
     print(f'日資料 合併完成 !\n')
 
 
@@ -206,6 +221,7 @@ def merge_week(
     sequence_type: str,
     new_folder: str,
     cn: list,  # columns_name
+    mr:int
 ):
     folder = 'week'
     pr = PathResolver(['data', folder], mkdir=True)
@@ -224,18 +240,19 @@ def merge_week(
     pr.pop_back()
 
     df = merge_main_df(file_path_list=file_path_list, folder=folder,
-                       new_folder=new_folder, cn=cn, sequence_type=sequence_type, data_type='week')
+                       new_folder=new_folder, cn=cn, sequence_type=sequence_type, data_type='week', mr=mr)
     pr.push_back(new_folder)
     pr.mkdir()
     pr.push_back(f'{folder}.csv' if sequence_type ==
                  'none-cross' else f'{folder} (cross-year).csv')
     write_path = pr.path()
-    df.to_csv(write_path)
+    df.to_csv(write_path, encoding='utf-8-sig')
     print(f'\n{"" if sequence_type == "none-cross" else "(跨年)"}週資料 合併完成 !')
 
 def merge_month(
     new_folder: str,
     cn: list,  # columns_name
+    mr:int
 ):
     folder = 'month'
     pr = PathResolver(['data', folder], mkdir=True)
@@ -251,10 +268,11 @@ def merge_month(
     pr.pop_back()
 
     df = merge_main_df(file_path_list=file_path_list, folder=folder,
-                       new_folder=new_folder, cn=cn, data_type='month')
+                       new_folder=new_folder, cn=cn, data_type='month', sequence_type='month', mr=mr)
+
     pr.push_back(new_folder)
     pr.mkdir()
     pr.push_back(f'{folder}.csv')
     write_path = pr.path()
-    df.to_csv(write_path)
+    df.to_csv(write_path, encoding='utf-8-sig',)
     print(f'\n月資料 合併完成 !')

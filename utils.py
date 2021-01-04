@@ -68,10 +68,22 @@ def default_at_most(daily: bool):
         return [2004, y-1]
     return [2004, y]
 
+def today_folder_name():
+    now = datetime.now()
+    y = iTs(now.year)
+    m = iTs(now.month)
+    d = iTs(now.day)
+    return y + m + d
 
 # nature log
 def ln(num: float) -> (float):
     return log(num)
+
+def try_except(key, _map, default):
+    try:
+        return _map[key]
+    except:
+        return default
 
 # file exist check
 def already_exist(q:str, data_type:str):

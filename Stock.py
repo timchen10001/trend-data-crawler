@@ -70,10 +70,14 @@ class Stock(GoogleTrend):
                 index += list(data.index)
             cy += 1
             i += 1
+
+        if len(column) == 0 or len(index) == 0:
+            raise Exception(f'{self.q} {self.key} 沒有資料')
+
         df[f'{self.q}'] = column
         df[f'{self.key}'] = index
         df.set_index(f'{self.key}').to_csv(
-            path_or_buf=data_path.push_ret_pop(file_name))
+            path_or_buf=data_path.push_ret_pop(file_name), encoding='utf-8-sig')
         print(f'Done !\n{self.q} 資料位於 {data_path.path()}')
 
     def scrapping_per_day(self):
@@ -110,7 +114,7 @@ class Stock(GoogleTrend):
         print(f'\n正在合併日資料 ···')
         data_path = self.data_path_day
         df = self._get_tidy_df_per_day()
-        df.to_csv(data_path.push_ret_pop(f'{self.q}.csv'))
+        df.to_csv(data_path.push_ret_pop(f'{self.q}.csv'), encoding='utf-8-sig')
         print(f'Done !\n目標位置在 {data_path.path()}')
 
     def _get_tidy_df_per_day(self):
@@ -169,7 +173,7 @@ class Stock(GoogleTrend):
         df = DataFrame()
         df[f'{self.key}'] = tidy['date']
         df[f'{self.q}'] = tidy['data']
-        df.set_index(f'{self.key}').to_csv(data_path.push_ret_pop(f'{self.q}.csv'))
+        df.set_index(f'{self.key}').to_csv(data_path.push_ret_pop(f'{self.q}.csv'), encoding='utf-8-sig')
         print(f'Done !\n目標位置在 {data_path.path()}')
 
 
@@ -204,10 +208,19 @@ class Stock(GoogleTrend):
             self.key = f'* {self.q}'
             sleep(rd_ms() + 1)
 
+    def catch(self):
+        if self.error_map:
+            return {
+                'q': self.q,
+                'key': self.key,
+                "date": [self.sy, self.ey],
+                'error_map': self.error_map
+            }
+
 
     def main(self, table_type:str='single-column'):
         temp_path = self.temp_path.path()
-        
+
         self.data_path_week = PathResolver(['data', 'week'], mkdir=True)
         self.data_path_day = PathResolver(['data', 'day'], mkdir=True)
         self.data_path_month = PathResolver(['data', 'month'], mkdir=True)
@@ -218,26 +231,52 @@ class Stock(GoogleTrend):
         self.to_google_trend_page()
         files_cleaner(path=temp_path)
 
+
+        error_map = {
+            "month": False,
+            "day": False,
+            "cross-year": False,
+            "week": False
+        }
+        hasError = False
+
         if self.month:
             self.scrapping_per_month()
-            self.merge_per_month()
+            try:
+                self.merge_per_month()
+            except:
+                error_map['month'] = True
+                hasError = True
             files_cleaner(path=temp_path)
 
         if self.day:
             self.scrapping_per_day()
-            self.merge_per_day()
+            try:
+                self.merge_per_day()
+            except:
+                error_map['day'] = True
+                hasError = True
             files_cleaner(path=temp_path)
 
         if self.sequence_type == 'cross-year':
             self.scrapping_per_week()
-            self.merge_per_week()
+            try:
+                self.merge_per_week()
+            except:
+                error_map['cross-year'] = True
+                hasError = True
             files_cleaner(path=temp_path)
             self.sequence_type = 'none-cross'
 
         if self.week:
             self.scrapping_per_week()
-            self.merge_per_week()
+            try:
+                self.merge_per_week()
+            except:
+                error_map['week'] = True
+                hasError = True
             files_cleaner(path=temp_path)
 
+        self.error_map = error_map if hasError else None
 
         self.driver.close()

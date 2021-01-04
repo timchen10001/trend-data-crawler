@@ -2,6 +2,7 @@ from utils import *
 from time import time
 from Stock import Stock
 from merge import merge_day, merge_month, merge_week
+from Error import ErrorResolver
 
 class SVI_CLI:
     def __init__(self, config):
@@ -17,6 +18,8 @@ class SVI_CLI:
         self.all_year_range = self.config['all_year_range'][0]
         self.columns_name = self.config['table.columns_name'][0]
         self.pspam = self.config['prevent_spamming'][0]
+        self.mr_w = self.config['median_range.week'][0]
+        self.mr_m = self.config['median_range.month'][0]
 
         self.year_at_most_default = default_at_most(daily=self.day)
         self.set_valid_year_range()
@@ -51,13 +54,13 @@ class SVI_CLI:
 
     def save(self):
         if self.week:
-            merge_week(sequence_type='none-cross', new_folder='merged', cn=self.columns_name)
+            merge_week(sequence_type='none-cross', new_folder='merged', cn=self.columns_name, mr=self.mr_w)
         if self.cross_year:
-            merge_week(sequence_type='cross-year', new_folder='merged', cn=self.columns_name)
+            merge_week(sequence_type='cross-year', new_folder='merged', cn=self.columns_name, mr=self.mr_w)
         if self.day:
             merge_day(new_folder='merged', table_type='single-column', sequence_type='none-cross', cn=self.columns_name)
         if self.month:
-            merge_month(new_folder='merged', cn=self.columns_name)
+            merge_month(new_folder='merged', cn=self.columns_name, mr=self.mr_m)
 
     def check_duplication(self, q:str):
         dt_map = {}
@@ -77,41 +80,51 @@ class SVI_CLI:
                     d = False
             bool_dt_map[f'{key}'] = d
 
-        if self.day: self.day = bool_dt_map['day']
-        if self.week: self.week = bool_dt_map['week']
-        if self.cross_year: self.cross_year = bool_dt_map['cross_year']
-        if self.month: self.month = bool_dt_map['month']
+        dt_map['day'] = bool_dt_map['day'] if self.day else False
+        dt_map['week'] = bool_dt_map['week'] if self.week else False
+        dt_map['cross_year'] = bool_dt_map['cross_year'] if self.cross_year else False
+        dt_map['month'] = bool_dt_map['month'] if self.month else False
+        return dt_map
 
 
 
     def google_trend_cli(self):
         geo = '' if self.geo == 'Global' else self.geo
-        qs = input('\n----- 趨勢關鍵字(群)： 例如 google、股票代號 -----\n').split()
+        qs = input('\n----- 趨勢關鍵字(群)： 例如: 2330 或 台積電 -----\n').split()
 
         t_start = time()
+        errors_list = []
         for q in qs:
             q = q.replace('-', ' ')
 
+            dt_map = {}
             if self.pspam:
-                self.check_duplication(q=q)
+                dt_map = self.check_duplication(q=q)
 
             tt_st = time()
             stock_google_trend = Stock(
                 q=q,
                 dr=self.y_range,
                 dev=False,
-                day=self.day,
-                week=self.week,
-                month=self.month,
-                cross_year=self.cross_year,
+                day=try_except(key='day', _map=dt_map, default=self.day),
+                week=try_except(key='week', _map=dt_map, default=self.week),
+                month=try_except(key='month', _map=dt_map, default=self.month),
+                cross_year=try_except(key='cross_year', _map=dt_map, default=self.cross_year),
                 geo=geo)
             stock_google_trend.main()
+            error_map = stock_google_trend.catch()
+            if error_map:
+                errors_list.append(error_map)
             tt_ed = time()
             print(f'{q} 耗時約 {int(tt_ed-tt_st)}s')
         t_end = time()
         print(f'\n總計耗時約 {int(t_end-t_start)}s')
 
         self.save()
+
+        if errors_list:
+            err = ErrorResolver(error_list=errors_list)
+            err.logging()
 
         return bool(input('\n----- 繼續 (y) / 結束 (n) -----\n') in 'yY')
 
