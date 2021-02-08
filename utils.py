@@ -158,4 +158,9 @@ def dot(s: float):
         sleep(s)
     print(' ', end='')
 
-
+def isSameType(element_list: list, dtype: type) -> (bool):
+    for index, element in enumerate(element_list):
+        dt = type(element)
+        if dt != dtype:
+            return False
+    return True

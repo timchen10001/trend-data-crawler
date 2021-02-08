@@ -196,8 +196,18 @@ class Stock(GoogleTrend):
         submit.click()
         sleep(0.5)
         try:
-            key = self.driver.find_element_by_css_selector(
-                self.result_selector).text.split(' ')
+            elements = self.driver.find_elements_by_css_selector(self.result_selector)
+            sleep(1)
+
+            key: list
+            for element in elements:
+                splited_elements = element.text.split(' ')
+                for text in splited_elements:
+                    if text == self.q:
+                        key = splited_elements
+            print(key)
+            sleep(1)
+            
             if key:
                 if self.q == key[1]:
                     self.key = key[0]

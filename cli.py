@@ -119,7 +119,6 @@ class SVI_CLI:
             print(f'{q} 耗時約 {int(tt_ed-tt_st)}s')
         t_end = time()
         print(f'\n總計耗時約 {int(t_end-t_start)}s')
-
         self.save()
 
         if errors_list:
