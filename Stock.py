@@ -7,6 +7,7 @@ from pandas.io.parsers import read_csv
 from datetime import datetime
 
 class Stock(GoogleTrend):
+
     def async_init_driver(self, url: str):
         try:
             self.driver.get(url)
@@ -23,7 +24,7 @@ class Stock(GoogleTrend):
         cy = sy
         while cy <= ey:
             if sequence_type == 'none-cross':
-                print(f'\n正在抓取 {self.q} {self.key} {cy}年 週資料···')
+                print(f'\n正在抓取 {self.origin_q} {self.key} {cy}年 週資料···')
                 url = f'{self.url}?date={cy}-01-01%20{cy}-12-31&q={self.q}{geo_query}'
                 self._toPage(url)
                 sleep(1)
@@ -31,7 +32,7 @@ class Stock(GoogleTrend):
                     if not self._download(): continue
 
             elif sequence_type == 'cross-year':
-                print(f'\n正在抓取 {self.q} {self.key} {cy}年 跨 {cy+1}年 週資料···')
+                print(f'\n正在抓取 {self.origin_q} {self.key} {cy}年 跨 {cy+1}年 週資料···')
                 url = f'{self.url}?date={cy}-07-01%20{cy+1}-6-30&q={self.q}{geo_query}'
                 self._toPage(url)
                 sleep(1)
@@ -72,13 +73,13 @@ class Stock(GoogleTrend):
             i += 1
 
         if len(column) == 0 or len(index) == 0:
-            raise Exception(f'{self.q} {self.key} 沒有資料')
+            raise Exception(f'{self.origin_q} {self.key} 沒有資料')
 
-        df[f'{self.q}'] = column
+        df[f'{self.origin_q}'] = column
         df[f'{self.key}'] = index
         df.set_index(f'{self.key}').to_csv(
             path_or_buf=data_path.push_ret_pop(file_name), encoding='utf-8-sig')
-        print(f'Done !\n{self.q} 資料位於 {data_path.path()}')
+        print(f'Done !\n{self.origin_q} 資料位於 {data_path.path()}')
 
     def scrapping_per_day(self):
 
@@ -97,7 +98,7 @@ class Stock(GoogleTrend):
         cy = sy
         sm = 1
         while cy <= ey:
-            print(f'\n正在抓取 {self.q} {self.key} {cy}年 日資料···')
+            print(f'\n正在抓取 {self.origin_q} {self.key} {cy}年 日資料···')
             while sm <= 7:
                 url = f'{self.url}?'
                 url += f'date={cy}-{iTs(sm)}-01%20{cy}-{iTs(sm+5)}-3{_0_or_1(sm+5)}&q={self.q}{geo_query}'
@@ -147,8 +148,8 @@ class Stock(GoogleTrend):
                     q_.append(_data)
                 key.extend(key_)
                 q.extend(q_)
+            df[f'{self.origin_q}'] = q
             df[f'{self.key}'] = key
-            df[f'{self.q}'] = q
             return df.set_index(f'{self.key}')
 
     def scrapping_per_month(self):
@@ -158,7 +159,7 @@ class Stock(GoogleTrend):
 
         geo_query = f'&geo={self.geo}'
 
-        print(f'\n正在抓取 {self.q} {self.key} {2004}年 跨 {current_year}年 月資料···')
+        print(f'\n正在抓取 {self.origin_q} {self.key} {2004}年 跨 {current_year}年 月資料···')
         url = f'{self.url}?date={start_date}%20{current_date}&q={self.q}{geo_query}'
         self._toPage(url)
         sleep(1)
@@ -172,13 +173,13 @@ class Stock(GoogleTrend):
         data_path = self.data_path_month
         df = DataFrame()
         df[f'{self.key}'] = tidy['date']
-        df[f'{self.q}'] = tidy['data']
+        df[f'{self.origin_q}'] = tidy['data']
         df.set_index(f'{self.key}').to_csv(data_path.push_ret_pop(f'{self.q}.csv'), encoding='utf-8-sig')
         print(f'Done !\n目標位置在 {data_path.path()}')
 
 
     def has_set_ticker_detail(self) -> (bool):
-        print(f'\n分析公司代號 {self.q} ···')
+        print(f'\n分析公司代號 {self.origin_q} ···')
         self.driver.delete_cookie('stock_user_uuid')
         self.async_init_driver('https://pchome.megatime.com.tw/search')
         sleep(rd_ms())
@@ -189,7 +190,7 @@ class Stock(GoogleTrend):
         sleep(0.5)
         input_selector.clear()
         sleep(0.5)
-        input_selector.send_keys(self.q)
+        input_selector.send_keys(self.origin_q)
         sleep(0.5)
         submit = self.driver.find_element_by_css_selector(self.submit_selector)
         sleep(0.5)
@@ -203,25 +204,26 @@ class Stock(GoogleTrend):
             for element in elements:
                 splited_elements = element.text.split(' ')
                 for text in splited_elements:
-                    if text == self.q:
+                    if text == self.origin_q:
                         key = splited_elements
             print(key)
             sleep(1)
-            
+
             if key:
-                if self.q == key[1]:
+                if self.origin_q == key[1]:
                     self.key = key[0]
                 else:
                     self.key = key[1]
             print(f'\n開始擷取 {self.key} 資料···\n')
         except:
-            self.key = f'* {self.q}'
+            self.key = f'* {self.origin_q}'
             sleep(rd_ms() + 1)
+
 
     def catch(self):
         if self.error_map:
             return {
-                'q': self.q,
+                'q': self.origin_q,
                 'key': self.key,
                 "date": [self.sy, self.ey],
                 'error_map': self.error_map

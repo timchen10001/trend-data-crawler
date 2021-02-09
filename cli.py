@@ -3,6 +3,9 @@ from time import time
 from Stock import Stock
 from merge import merge_day, merge_month, merge_week
 from Error import ErrorResolver
+from os import listdir, rename
+from Resolvers import PathResolver
+from pandas import read_csv
 
 class SVI_CLI:
     def __init__(self, config):
@@ -10,6 +13,7 @@ class SVI_CLI:
         self._state_init()
 
     def _state_init(self):
+        self.txt = self.config['txt'][0]
         self.geo = self.config['geo'][0]
         self.week = self.config['week'][0]
         self.day = self.config['day'][0]
@@ -86,7 +90,39 @@ class SVI_CLI:
         dt_map['month'] = bool_dt_map['month'] if self.month else False
         return dt_map
 
+    def csv_to_txt(self):
+        if not self.txt: return
 
+        interface_pr = PathResolver(nodes=['interface'], mkdir=True)
+        data_pr = PathResolver(nodes=['data'])
+
+        data_path = data_pr.path()
+        interface_path = interface_pr.path()
+
+        data_folders = listdir(data_path)
+
+        files_cleaner(interface_path)
+
+        for folder in data_folders:
+            if folder == 'error': continue
+
+            data_pr.push_back(node=folder)
+            interface_pr.push_back(node=folder)
+            interface_pr.mkdir()
+
+            path = data_pr.path()
+
+            files = listdir(path=path)
+            for f in files:
+                p = data_pr.push_ret_pop(f)
+                interface_p = interface_pr.push_ret_pop(f)
+
+                df = read_csv(filepath_or_buffer=p)
+                df.to_csv(interface_p)
+                rename(src=interface_p, dst=interface_p.replace('csv', 'txt'))
+
+            data_pr.pop_back()
+            interface_pr.pop_back()
 
     def google_trend_cli(self):
         geo = '' if self.geo == 'Global' else self.geo
@@ -95,14 +131,16 @@ class SVI_CLI:
         t_start = time()
         errors_list = []
         for q in qs:
-            q = q.replace('-', ' ')
+            origin_q = q.replace('&', ' ')
+            q = q.replace('*', '')
 
             dt_map = {}
             if self.pspam:
-                dt_map = self.check_duplication(q=q)
+                dt_map = self.check_duplication(q=origin_q)
 
             tt_st = time()
             stock_google_trend = Stock(
+                origin_q=origin_q,
                 q=q,
                 dr=self.y_range,
                 dev=False,
@@ -120,6 +158,9 @@ class SVI_CLI:
         t_end = time()
         print(f'\n總計耗時約 {int(t_end-t_start)}s')
         self.save()
+
+        if self.txt:
+            self.csv_to_txt()
 
         if errors_list:
             err = ErrorResolver(error_list=errors_list)
@@ -139,3 +180,4 @@ class SVI_CLI:
 
         print('\n----- 系統將在 2 秒後自動關閉視窗，或是手動點擊右上角離開視窗 ··· -----')
         sleep(1)
+

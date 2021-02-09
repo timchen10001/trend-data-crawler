@@ -29,6 +29,8 @@ def tw_stock_config():
     ) in 'yY' else str(
         input('\n----- 區域英文縮寫 (全球: Global, 其他地區自行估狗) -----\n'))
 
+    txt = bool(input('\n----- 是否需要 文字檔 ? (y / n) -----\n') in 'yY')
+
     day = bool(input('\n----- 是否需要 日資料 ? (y / n) -----\n') in 'yY')
 
     week = bool(input('\n----- 是否需要 週資料 ? (y / n) -----\n') in 'yY')
@@ -55,6 +57,7 @@ def tw_stock_config():
 
     config_json = pd.json_normalize({
         "geo": geo,
+        'txt': txt,
         "day": day,
         "week": week,
         "month": month,

@@ -14,6 +14,7 @@ from random import randint
 class GoogleTrend:
     def __init__(
         self,
+        origin_q: str,
         q: str,
         dr: list,
         day: bool,
@@ -21,7 +22,7 @@ class GoogleTrend:
         month: bool,
         cross_year: bool,
         dev: bool = False,
-        geo='TW'
+        geo: str='TW'
     ):
         self.download_button_selector = 'body > div.trends-wrapper > div:nth-child(2) > div > md-content > div > div > div:nth-child(1) > trends-widget > ng-include > widget > div > div > div > widget-actions > div > button.widget-actions-item.export'
         self.no_data_error_selector = 'body > div.trends-wrapper > div:nth-child(2) > div > md-content > div > div > div:nth-child(1) > trends-widget > ng-include > widget > div > div > ng-include > div > ng-include > div > p.widget-error-title'
@@ -33,6 +34,7 @@ class GoogleTrend:
         self.dev = dev
         self.geo = geo
         self.ps = path_separate()  # path_separate
+        self.origin_q = origin_q
         self.q = q  # query to search
         self.key = None
         self.day = day

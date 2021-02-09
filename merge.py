@@ -33,10 +33,6 @@ def merge_main_df(
         # treat data
         col = tidy_array(data=csv[key])
 
-        if not isSameType(element_list=col, dtype=type(1)):
-            print('\n')
-            raise Exception(f'\n  型別錯誤\n  可能原因：{name} {key} 之原始資料被不明原因更動\n  解決辦法：請確認該原始資料的數據型態是否一致')
-
         with_adj_col = data_type == 'week' or data_type == 'month'
         adjust_col = list(array(col)+1) if with_adj_col else None
 
