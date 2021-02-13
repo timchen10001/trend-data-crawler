@@ -145,6 +145,6 @@ class GoogleTrend:
         new_path = temp_path.push_ret_pop(f'{i}.csv')
         while os.path.isfile(new_path):
             i += 1
-            new_path = temp_path.push_ret_pop(f'{i}.csv')
+        new_path = temp_path.push_ret_pop(f'{i}.csv')
         origin_path = temp_path.push_ret_pop('multiTimeline.csv')
         os.rename(origin_path, new_path)
