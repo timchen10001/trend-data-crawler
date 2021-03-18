@@ -115,12 +115,13 @@ class GoogleTrend:
         selector = self.download_button_selector
         # download = self.driver.find_element(By.CSS_SELECTOR, selector)
         try:
-            download = self.driver.find_element_by_css_selector (selector)
+            download = self.driver.find_element_by_css_selector(selector)
             sleep(1)
             download.click()
             sleep(1)
             self._avoid_rewrite()
             print('Done (成功)')
+
             return True
         except:
             s = randint(5, 10)
