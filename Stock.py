@@ -16,6 +16,7 @@ class Stock(GoogleTrend):
 
     def scrapping_per_week(self):
         geo_query = f'&geo={self.geo}'
+        cat_query = f'&cat=12' if self.cat else ""
 
         sequence_type = self.sequence_type
         sy = self.sy
@@ -25,17 +26,15 @@ class Stock(GoogleTrend):
         while cy <= ey:
             if sequence_type == 'none-cross':
                 print(f'\n正在抓取 {self.origin_q} {self.key} {cy}年 週資料···')
-                url = f'{self.url}?date={cy}-01-01%20{cy}-12-31&q={self.q}{geo_query}'
+                url = f'{self.url}?date={cy}-01-01%20{cy}-12-31&q={self.q}{geo_query}{cat_query}'
                 self._toPage(url)
-                sleep(1)
                 if self._isData():
                     if not self._download(): continue
 
             elif sequence_type == 'cross-year':
                 print(f'\n正在抓取 {self.origin_q} {self.key} {cy}年 跨 {cy+1}年 週資料···')
-                url = f'{self.url}?date={cy}-07-01%20{cy+1}-6-30&q={self.q}{geo_query}'
+                url = f'{self.url}?date={cy}-07-01%20{cy+1}-6-30&q={self.q}{geo_query}{cat_query}'
                 self._toPage(url)
-                sleep(1)
                 if self._isData():
                     if not self._download(): continue
             cy += 1
@@ -66,7 +65,8 @@ class Stock(GoogleTrend):
             if temp_path.isfile(f_name):
                 filepath = temp_path.push_ret_pop(f_name)
                 csv = read_csv(filepath_or_buffer=filepath)
-                data = csv['類別：所有類別'][1:]
+                key = csv.keys()[0]
+                data = csv[key][1:]
                 column += list(data)
                 index += list(data.index)
             cy += 1
@@ -86,6 +86,7 @@ class Stock(GoogleTrend):
         def _0_or_1(i: int):
             return '0' if i == 6 else '1'
         geo_query = f'&geo={self.geo}'
+        cat_query = f'&cat=12' if self.cat else ""
 
         # sy: start year
         # ey: end year
@@ -101,10 +102,9 @@ class Stock(GoogleTrend):
             print(f'\n正在抓取 {self.origin_q} {self.key} {cy}年 日資料···')
             while sm <= 7:
                 url = f'{self.url}?'
-                url += f'date={cy}-{iTs(sm)}-01%20{cy}-{iTs(sm+5)}-3{_0_or_1(sm+5)}&q={self.q}{geo_query}'
+                url += f'date={cy}-{iTs(sm)}-01%20{cy}-{iTs(sm+5)}-3{_0_or_1(sm+5)}&q={self.q}{geo_query}{cat_query}'
                 sm += 6
                 self._toPage(url)
-                sleep(1)
                 if self._isData():
                     if not self._download(): continue
                 sleep(rd_ms())
@@ -158,11 +158,11 @@ class Stock(GoogleTrend):
         current_year = current_date.split('-')[0]
 
         geo_query = f'&geo={self.geo}'
+        cat_query = f'&cat=12' if self.cat else ""
 
         print(f'\n正在抓取 {self.origin_q} {self.key} {2004}年 跨 {current_year}年 月資料···')
-        url = f'{self.url}?date={start_date}%20{current_date}&q={self.q}{geo_query}'
+        url = f'{self.url}?date={start_date}%20{current_date}&q={self.q}{geo_query}{cat_query}'
         self._toPage(url)
-        sleep(1)
         if self._isData():
             self._download()
 
@@ -217,7 +217,7 @@ class Stock(GoogleTrend):
             print(f'\n開始擷取 {self.key} 資料···\n')
         except:
             self.key = f'* {self.origin_q}'
-            sleep(rd_ms() + 1)
+            sleep(rd_ms())
 
 
     def catch(self):

@@ -15,6 +15,7 @@ class SVI_CLI:
     def _state_init(self):
         self.txt = self.config['txt'][0]
         self.geo = self.config['geo'][0]
+        self.cat = self.config['cat'][0]
         self.week = self.config['week'][0]
         self.day = self.config['day'][0]
         self.month = self.config['month'][0]
@@ -148,7 +149,9 @@ class SVI_CLI:
                 week=try_except(key='week', _map=dt_map, default=self.week),
                 month=try_except(key='month', _map=dt_map, default=self.month),
                 cross_year=try_except(key='cross_year', _map=dt_map, default=self.cross_year),
-                geo=geo)
+                geo=geo,
+                cat=self.cat
+                )
             stock_google_trend.main()
             error_map = stock_google_trend.catch()
             if error_map:
@@ -162,7 +165,8 @@ class SVI_CLI:
         if self.txt:
             self.csv_to_txt()
 
-        if errors_list:
+        if len(errors_list):
+            print(errors_list)
             err = ErrorResolver(error_list=errors_list)
             err.logging()
 

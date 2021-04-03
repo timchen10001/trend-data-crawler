@@ -22,7 +22,8 @@ class GoogleTrend:
         month: bool,
         cross_year: bool,
         dev: bool = False,
-        geo: str='TW'
+        geo: str='TW',
+        cat: str=""
     ):
         self.download_button_selector = 'body > div.trends-wrapper > div:nth-child(2) > div > md-content > div > div > div:nth-child(1) > trends-widget > ng-include > widget > div > div > div > widget-actions > div > button.widget-actions-item.export'
         self.no_data_error_selector = 'body > div.trends-wrapper > div:nth-child(2) > div > md-content > div > div > div:nth-child(1) > trends-widget > ng-include > widget > div > div > ng-include > div > ng-include > div > p.widget-error-title'
@@ -33,6 +34,7 @@ class GoogleTrend:
         self.url = u'https://trends.google.com.tw/trends/explore'
         self.dev = dev
         self.geo = geo
+        self.cat = cat
         self.ps = path_separate()  # path_separate
         self.origin_q = origin_q
         self.q = q  # query to search
@@ -103,6 +105,7 @@ class GoogleTrend:
         self.driver.get(url)
         sleep(0.5)
         print(self.driver.current_url)
+        sleep(0.5)
 
     def _download(self, failed:int=0):
         dot(.5)
