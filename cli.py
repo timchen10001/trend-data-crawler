@@ -3,7 +3,7 @@ from time import time
 from Stock import Stock
 from merge import merge_day, merge_month, merge_week
 from Error import ErrorResolver
-from os import listdir, rename
+from os import listdir, rename, remove
 from Resolvers import PathResolver
 from pandas import read_csv
 
@@ -94,6 +94,18 @@ class SVI_CLI:
     def csv_to_txt(self):
         if not self.txt: return
 
+        def compiler(path: str, new_path: str):
+          temps: list
+          with open(file=path, mode='r', encoding="utf-8") as reader:
+            temps = [','.join(
+                [value if value != '' else 'NA' for value in e.split(',')[1:]]
+            ) for e in reader.readlines()]
+            reader.close()
+          with open(file=new_path, mode='w', encoding="utf-8") as writer:
+            for temp in temps:
+              writer.write(temp)
+            writer.close()
+
         interface_pr = PathResolver(nodes=['interface'], mkdir=True)
         data_pr = PathResolver(nodes=['data'])
 
@@ -120,7 +132,11 @@ class SVI_CLI:
 
                 df = read_csv(filepath_or_buffer=p)
                 df.to_csv(interface_p)
-                rename(src=interface_p, dst=interface_p.replace('csv', 'txt'))
+                temp_txt_path = interface_p.replace('csv', 'temp.txt')
+                rename(src=interface_p, dst=temp_txt_path)
+                compiler(path=temp_txt_path, new_path=temp_txt_path.replace('temp.txt', 'txt'))
+                remove(path=temp_txt_path)
+
 
             data_pr.pop_back()
             interface_pr.pop_back()
