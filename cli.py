@@ -95,16 +95,22 @@ class SVI_CLI:
         if not self.txt: return
 
         def compiler(path: str, new_path: str):
-          temps: list
-          with open(file=path, mode='r', encoding="utf-8") as reader:
-            temps = [','.join(
-                [value if value != '' else 'NA' for value in e.split(',')[1:]]
-            ) for e in reader.readlines()]
-            reader.close()
-          with open(file=new_path, mode='w', encoding="utf-8") as writer:
-            for temp in temps:
-              writer.write(temp)
-            writer.close()
+
+            def handleNA(value):
+                if value == '' or value == '\n':
+                    return f'NA{value}'
+                return value
+
+            temps: list
+            with open(file=path, mode='r', encoding="utf-8") as reader:
+              temps = [','.join(
+                  [handleNA(value=value) for value in e.split(',')[1:]]
+              ) for e in reader.readlines()]
+              reader.close()
+            with open(file=new_path, mode='w', encoding="utf-8") as writer:
+              for temp in temps:
+                writer.write(temp)
+              writer.close()
 
         interface_pr = PathResolver(nodes=['interface'], mkdir=True)
         data_pr = PathResolver(nodes=['data'])
