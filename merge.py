@@ -6,6 +6,14 @@ from datetime import datetime
 from numpy import median, array
 from utils import *
 
+def getCol(col: list) -> (list):
+    adjust_col = []
+    for e in col:
+        try:
+            adjust_col.append(float(e) + 1)
+        except:
+            adjust_col.append(1)
+    return adjust_col
 
 def merge_main_df(
     file_path_list: list,
@@ -34,7 +42,7 @@ def merge_main_df(
         col = tidy_array(data=csv[key])
 
         with_adj_col = data_type == 'week' or data_type == 'month'
-        adjust_col = list(array(col)+1) if with_adj_col else None
+        adjust_col = getCol(col) if with_adj_col else None
 
         # treat date
         row = list(csv[key_map[0]])

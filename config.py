@@ -1,5 +1,5 @@
 from os import path
-import pandas as pd
+from pandas import read_json, json_normalize
 from Resolvers import PathResolver
 
 
@@ -12,7 +12,7 @@ def tw_stock_config():
     config = {}
 
     if path.isfile(config_path):
-        config = pd.read_json(config_path)
+        config = read_json(config_path)
         cols = config.columns
         print('\n\n----- 爬蟲預設選項 -----')
         for col in cols:
@@ -25,9 +25,11 @@ def tw_stock_config():
         return config
 
     geo = 'TW' if str(
-        input('\n----- 搜索區域：預設台灣(y) / 更改區域(n) -----\n')
+        input('\n----- 搜索區域：預設台灣 (y) / 更改區域 (n) -----\n')
     ) in 'yY' else str(
         input('\n----- 區域英文縮寫 (全球: Global, 其他地區自行估狗) -----\n'))
+
+    cat = bool(input('\n----- 指定類別：工商業 (y) / 所有類別 (n) -----\n') in 'yY')
 
     txt = bool(input('\n----- 是否需要 文字檔 ? (y / n) -----\n') in 'yY')
 
@@ -55,9 +57,10 @@ def tw_stock_config():
     mr_m = mr_m_default if bool(input(
         f'\n----- 是否自訂 month 月資料 中位數取值全距 ? 預設:{mr_m_default}個時間單位  (y / n) -----\n') in 'nN') else int(input('\n----- 請輸入 month 月資料中位數取值全距 -----\n'))
 
-    config_json = pd.json_normalize({
+    config_json = json_normalize({
         "geo": geo,
         'txt': txt,
+        "cat": cat,
         "day": day,
         "week": week,
         "month": month,

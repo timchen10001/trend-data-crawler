@@ -86,7 +86,8 @@ class DataResolver:
         _tidy = {}
         for p in path_list:
             csv = read_csv(p)
-            data = csv['類別：所有類別'][1:]  # not tidy
+            key = csv.keys()[0]
+            data = csv[key][1:]  # not tidy
             date = list(data.index)  # not tidy
             tidy_data = self.merge_day_with_conflict(data=data, date=date)
             # int
@@ -105,8 +106,8 @@ class DataResolver:
         month_data = []
         for p in path_list:
             csv = read_csv(p)
-
-            data = list(csv['類別：所有類別'][1:])
+            key = csv.keys()[0]
+            data = list(csv[key][1:])
             date = list(csv.index[1:])
 
             month_data.extend(data)
