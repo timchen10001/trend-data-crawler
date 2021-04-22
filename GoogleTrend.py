@@ -103,9 +103,10 @@ class GoogleTrend:
 
     def _toPage(self, url):
         self.driver.get(url)
-        sleep(0.5)
+        s = randint(1, 2) / 2;
+        sleep(s)
         print(self.driver.current_url)
-        sleep(0.5)
+        sleep(s)
 
     def _download(self, failed:int=0):
         dot(.5)
