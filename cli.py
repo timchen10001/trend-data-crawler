@@ -157,20 +157,27 @@ class SVI_CLI:
             origin_q = q.replace('&', ' ')
             q = q.replace('*', '')
 
-            dt_map = {}
+            go_map = {}
             if self.pspam:
-                dt_map = self.check_duplication(q=origin_q)
-
+                go = False
+                go_map = self.check_duplication(q=origin_q)
+                for go_key in go_map:
+                    if go_map[go_key]:
+                        go = True
+                        break
+                if not go:
+                    continue
+                
             tt_st = time()
             stock_google_trend = Stock(
                 origin_q=origin_q,
                 q=q,
                 dr=self.y_range,
                 dev=False,
-                day=try_except(key='day', _map=dt_map, default=self.day),
-                week=try_except(key='week', _map=dt_map, default=self.week),
-                month=try_except(key='month', _map=dt_map, default=self.month),
-                cross_year=try_except(key='cross_year', _map=dt_map, default=self.cross_year),
+                day=try_except(key='day', _map=go_map, default=self.day),
+                week=try_except(key='week', _map=go_map, default=self.week),
+                month=try_except(key='month', _map=go_map, default=self.month),
+                cross_year=try_except(key='cross_year', _map=go_map, default=self.cross_year),
                 geo=geo,
                 cat=self.cat
                 )
