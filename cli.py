@@ -7,6 +7,7 @@ from os import listdir, rename, remove
 from Resolvers import PathResolver
 from pandas import read_csv
 from selenium.common.exceptions import SessionNotCreatedException
+# from Driver import DriverUpdater
 
 class SVI_CLI:
     def __init__(self, config):
@@ -210,16 +211,18 @@ class SVI_CLI:
 
 
     def taiwan_stock_cli(self):
-        try:
-            while True:
-                if not self.google_trend_cli(): break
-        except SessionNotCreatedException:
-            print('ChromeDriver 版本過期，請更新版本。')
+        # try:
+        while True:
+            if not self.google_trend_cli():
+                break
+        # except SessionNotCreatedException:
+            # print('ChromeDriver 版本過期，請更新版本。')
+            # updater = DriverUpdater()
             # handle driver updating...
-        except:
-            print('\n中斷爬蟲中')
-            dot(1)
-            self.save()
+        # except:
+            # print('\n中斷爬蟲中')
+            # dot(1)
+            # self.save()
 
         print('\n----- 系統將在 2 秒後自動關閉視窗，或是手動點擊右上角離開視窗 ··· -----')
         sleep(1)
