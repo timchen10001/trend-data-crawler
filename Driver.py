@@ -25,11 +25,6 @@ class DriverPath:
 
 
 
-
-
-
-
-
 class Driver(DriverPath):
     def __init__(
         self,
@@ -62,31 +57,4 @@ class Driver(DriverPath):
 
     def driver(self):
         return self._driver
-
-
-
-
-
-
-
-
-class DriverUpdater(DriverPath):
-    def __init__(self, down_file_name: str):
-        DriverPath.__init__(self)
-        self.download_file_name = download_file_name
-        self._get_driver()
-
-    def _get_driver(self):
-
-        download_pr = PathResolver([
-            'download',
-            self.download_file_name
-        ], mkdir=True)
-
-        self.driver = Driver(
-            driver_directory=self.driver_directory,
-            download_directory=download_pr.path()
-        )
-
-
 

@@ -28,15 +28,17 @@ class Stock(GoogleTrend):
                 print(f'\n正在抓取 {self.origin_q} {self.key} {cy}年 週資料···')
                 url = f'{self.url}?date={cy}-01-01%20{cy}-12-31&q={self.q}{geo_query}{cat_query}'
                 self._toPage(url)
-                if self._isData():
-                    if not self._download(): continue
+                if self.no_error():
+                    if not self._download():
+                        continue
 
             elif sequence_type == 'cross-year':
                 print(f'\n正在抓取 {self.origin_q} {self.key} {cy}年 跨 {cy+1}年 週資料···')
                 url = f'{self.url}?date={cy}-07-01%20{cy+1}-6-30&q={self.q}{geo_query}{cat_query}'
                 self._toPage(url)
-                if self._isData():
-                    if not self._download(): continue
+                if self.no_error():
+                    if not self._download():
+                        continue
             cy += 1
 
     def merge_per_week(self):
@@ -105,7 +107,7 @@ class Stock(GoogleTrend):
                 url += f'date={cy}-{iTs(sm)}-01%20{cy}-{iTs(sm+5)}-3{_0_or_1(sm+5)}&q={self.q}{geo_query}{cat_query}'
                 sm += 6
                 self._toPage(url)
-                if self._isData():
+                if self.isHasData():
                     if not self._download(): continue
                 sleep(rd_ms())
             cy += 1

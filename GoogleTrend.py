@@ -27,10 +27,16 @@ class GoogleTrend:
         cat: str=""
     ):
         self.download_button_selector = 'body > div.trends-wrapper > div:nth-child(2) > div > md-content > div > div > div:nth-child(1) > trends-widget > ng-include > widget > div > div > div > widget-actions > div > button.widget-actions-item.export'
-        self.no_data_error_selector = 'body > div.trends-wrapper > div:nth-child(2) > div > md-content > div > div > div:nth-child(1) > trends-widget > ng-include > widget > div > div > ng-include > div > ng-include > div > p.widget-error-title'
         self.input_selector = '#search_text_table'
         self.submit_selector = '#bttb > table > tbody > tr > td > div > form > table > tbody > tr > td:nth-child(3) > input[type=button]'
         self.result_selector = '#stocks_list_table > table > tbody > tr > td > a'
+        self.no_data_error_selector = 'body > div.trends-wrapper > div:nth-child(2) > div > md-content > div > div > div:nth-child(1) > trends-widget > ng-include > widget > div > div > ng-include > div > ng-include > div > p.widget-error-title'
+        self.error_title_selector = 'body > div.trends-wrapper > div:nth-child(2) > div > error > div > div > div.error-title'
+
+        self.error_selectors = [
+            self.no_data_error_selector,
+            self.error_title_selector
+        ]
 
         self.url = u'https://trends.google.com.tw/trends/explore'
         self.dev = dev
@@ -98,15 +104,22 @@ class GoogleTrend:
             return self._download(failed=failed+1)
 
 
-    def _isData(self):
-        selector = self.no_data_error_selector
+    def no_error(
+        self,
+        selector_index = 0
+    ):
+        if selector_index == len(self.error_selectors):
+            return True
+
+        selector = self.error_selectors[selector_index]
+        s = randint(1, 2) / 2
         try:
+            sleep(s)
             error = self.driver.find_element_by_css_selector(selector)
-            sleep(1)
             print(error.text)
             return False
         except:
-            return True
+            return self.no_error(selector_index=selector_index+1)
 
     def _avoid_rewrite(self):
         temp_path = self.temp_path
