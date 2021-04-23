@@ -3,10 +3,11 @@ from time import sleep
 from platform import system
 
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+# from selenium.webdriver.chrome.options import Options
 # from selenium.webdriver.common.by import By
 import pandas as pd
 
+from Driver import Driver
 from Resolvers import *
 from utils import *
 from random import randint
@@ -47,7 +48,6 @@ class GoogleTrend:
         self.ey = int(dr[1])
         self.env_dir = os.getcwd()
         self.platform = system()
-        self.driver = None
 
         self.temp_path = PathResolver(['temp', self.q], mkdir=True)
 
@@ -55,51 +55,15 @@ class GoogleTrend:
 
     def _get_driver(self) -> (webdriver.chrome.webdriver.WebDriver):
         headless = not self.dev
-
-        driver_pr = PathResolver(['driver'])
-        driver_pr.push_back(self._driver_file_name())
-
         # get temp data path
         temp_path = self.temp_path.path()
-
         files_cleaner(temp_path)
-
-        download_prefs = {
-            'download.default_directory': temp_path,
-            'download.prompt_for_download': False,
-            'profile.default_content_settings.popups': 0
-        }
-
-        chrome_options = Options()
-        chrome_options.add_experimental_option('prefs', download_prefs)
-        chrome_options.add_argument('--disable-notifications')
-        chrome_options.add_argument('blink-settings=imagesEnabled=false')
-
-        if headless:
-            chrome_options.add_argument('--window-size=1440,900')
-            chrome_options.add_argument('--headless')
-            chrome_options.add_argument('--log-level=3')
-
-        driver = webdriver.Chrome(
-            executable_path=driver_pr.path(),
-            options=chrome_options
-        )
-        driver.set_window_size(1440, 900)
-        self.driver = driver
+        self.driver = Driver(download_directory=temp_path).driver()
 
     def to_google_trend_page(self):
         self.driver.get(self.url)
         sleep(.5)
         self.driver.refresh()
-
-
-    def _driver_file_name(self):
-        file_name = 'chromedriver'
-        if self.platform == 'Windows':
-            file_name += '.exe'
-        elif self.platform == 'Linux':
-            file_name += '-linux'
-        return file_name
 
     def _toPage(self, url):
         self.driver.get(url)
@@ -128,7 +92,7 @@ class GoogleTrend:
 
             return True
         except:
-            s = randint(5, 10)
+            s = randint(2, 5)
             print(f'Failed (失敗) ··· 休眠約 {s}s 後喚醒')
             dot(s/2.5)
             return self._download(failed=failed+1)

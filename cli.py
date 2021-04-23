@@ -6,6 +6,7 @@ from Error import ErrorResolver
 from os import listdir, rename, remove
 from Resolvers import PathResolver
 from pandas import read_csv
+from selenium.common.exceptions import SessionNotCreatedException
 
 class SVI_CLI:
     def __init__(self, config):
@@ -147,6 +148,20 @@ class SVI_CLI:
             data_pr.pop_back()
             interface_pr.pop_back()
 
+    def go_crawling(self, q):
+        go_map = {}
+        if self.pspam:
+            go = False
+            go_map = self.check_duplication(q=q)
+            for go_key in go_map:
+                if go_map[go_key]:
+                    go = True
+                    break
+            if not go:
+                return False
+        return go_map
+
+
     def google_trend_cli(self):
         geo = '' if self.geo == 'Global' else self.geo
         qs = input('\n----- 趨勢關鍵字(群)： 例如: 2330 或 台積電 -----\n').split()
@@ -157,17 +172,9 @@ class SVI_CLI:
             origin_q = q.replace('&', ' ')
             q = q.replace('*', '')
 
-            go_map = {}
-            if self.pspam:
-                go = False
-                go_map = self.check_duplication(q=origin_q)
-                for go_key in go_map:
-                    if go_map[go_key]:
-                        go = True
-                        break
-                if not go:
-                    continue
-                
+            go_map = self.go_crawling(q=origin_q)
+            if not go_map: continue
+
             tt_st = time()
             stock_google_trend = Stock(
                 origin_q=origin_q,
@@ -206,6 +213,9 @@ class SVI_CLI:
         try:
             while True:
                 if not self.google_trend_cli(): break
+        except SessionNotCreatedException:
+            print('ChromeDriver 版本過期，請更新版本。')
+            # handle driver updating...
         except:
             print('\n中斷爬蟲中')
             dot(1)
