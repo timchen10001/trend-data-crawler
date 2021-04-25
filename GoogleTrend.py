@@ -3,6 +3,7 @@ from time import sleep
 from platform import system
 
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 # from selenium.webdriver.chrome.options import Options
 # from selenium.webdriver.common.by import By
 import pandas as pd
@@ -97,6 +98,8 @@ class GoogleTrend:
             print('Done (成功)')
 
             return True
+        except NoSuchElementException:
+            return self.no_error()
         except:
             s = randint(2, 5)
             print(f'Failed (失敗) ··· 休眠約 {s}s 後喚醒')

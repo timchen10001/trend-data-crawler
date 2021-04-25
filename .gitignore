@@ -12,3 +12,4 @@ test.ipynb
 driver/.DS_Store
 
 interface
+config\chromedriver.exes

@@ -1,5 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.common.exceptions import SessionNotCreatedException
 from Resolvers import PathResolver
 from platform import system
 
@@ -51,10 +52,11 @@ class Driver(DriverPath):
             executable_path=self.driver_directory,
             options=chrome_options
         )
-
+        
         driver.set_window_size(1440, 900)
         self._driver = driver
 
     def driver(self):
         return self._driver
+
 
