@@ -2,6 +2,7 @@ from selenium import webdriver
 from Resolvers import PathResolver
 from Driver import Driver
 from time import sleep
+from selenium.common.exceptions import NoSuchElementException
 
 class DriverUpdater:
     def __init__(self):
@@ -19,7 +20,11 @@ class DriverUpdater:
         sleep(1)
 
     def check_version(self):
-        judgment = self.updater.find_element_by_css_selector(
+        try:
+            judgment = self.updater.find_element_by_css_selector(
             "#content-base > section.section-block.section-block-main-extra > div > div.content-block-main > div.judgment.judgment-bad")
-        print(judgment.text)
+            print(judgment.text)
+        except NoSuchElementException:
+            self.updater.close();
+            print('Done!')
 
